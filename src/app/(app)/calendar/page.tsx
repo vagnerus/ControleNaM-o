@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -9,11 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { TransactionList } from '@/components/transactions/TransactionList';
 import type { Account, Category, Tag, Transaction } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
-import { isSameDay } from 'date-fns';
+import { isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function CalendarPage() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
     // Queries
@@ -41,9 +44,21 @@ export default function CalendarPage() {
     
     const isLoading = transactionsLoading || accountsLoading || categoriesLoading || tagsLoading;
 
-    const transactionDates = useMemo(() => {
-        return (transactions || []).map(t => new Date(t.date));
+    const dayTransactionInfo = useMemo(() => {
+        const info = new Map<string, { income: boolean, expense: boolean }>();
+        if (!transactions) return info;
+        
+        for (const t of transactions) {
+            const dayKey = format(new Date(t.date), 'yyyy-MM-dd');
+            const dayInfo = info.get(dayKey) || { income: false, expense: false };
+            if (t.type === 'income') dayInfo.income = true;
+            if (t.type === 'expense') dayInfo.expense = true;
+            info.set(dayKey, dayInfo);
+        }
+        return info;
+
     }, [transactions]);
+
 
     const selectedDayTransactions = useMemo(() => {
         if (!selectedDate || !transactions) return [];
@@ -53,27 +68,33 @@ export default function CalendarPage() {
   return (
     <>
       <Header title="Calendário Financeiro" />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+        <div className="xl:col-span-2">
             <Card>
-                <CardContent className="p-2">
+                <CardContent className="p-1">
                      <Calendar
                         mode="single"
                         selected={selectedDate}
                         onSelect={setSelectedDate}
+                        month={currentMonth}
+                        onMonthChange={setCurrentMonth}
                         className="p-0"
                         classNames={{
-                            day_cell: "text-center text-sm p-0 relative",
-                            day: "h-12 w-full justify-center p-0 font-normal aria-selected:opacity-100",
+                            cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                            day: "h-14 w-14 p-1 font-normal aria-selected:opacity-100",
                         }}
                         components={{
                             DayContent: ({ date }) => {
-                                const hasTransactions = transactionDates.some(tDate => isSameDay(tDate, date));
+                                const dayKey = format(date, 'yyyy-MM-dd');
+                                const info = dayTransactionInfo.get(dayKey);
                                 return (
                                     <div className="relative h-full w-full flex items-center justify-center">
                                         <span>{date.getDate()}</span>
-                                        {hasTransactions && (
-                                            <div className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                                        {(info?.income || info?.expense) && (
+                                            <div className="absolute bottom-2 flex space-x-1">
+                                                {info.income && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                                                {info.expense && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+                                            </div>
                                         )}
                                     </div>
                                 );
@@ -83,7 +104,7 @@ export default function CalendarPage() {
                 </CardContent>
             </Card>
         </div>
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1">
              <Card className="h-full">
                 <CardHeader>
                     <CardTitle>Transações do Dia</CardTitle>
