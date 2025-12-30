@@ -29,24 +29,6 @@
       "description": "Reserva de Emergência",
       "imageUrl": "https://images.unsplash.com/photo-1561414927-6d86591d0c4f?q=80&w=600&h=400&fit=crop",
       "imageHint": "piggy bank"
-    },
-    {
-      "id": "goal-wedding",
-      "description": "Casamento",
-      "imageUrl": "https://images.unsplash.com/photo-1597159292333-113c248a37e7?q=80&w=600&h=400&fit=crop",
-      "imageHint": "wedding rings"
-    },
-    {
-      "id": "goal-renovation",
-      "description": "Reforma da Casa",
-      "imageUrl": "https://images.unsplash.com/photo-1600607687932-e3edd2b09052?q=80&w=600&h=400&fit=crop",
-      "imageHint": "home interior"
-    },
-    {
-      "id": "goal-new-business",
-      "description": "Abrir um Negócio",
-      "imageUrl": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=600&h=400&fit=crop",
-      "imageHint": "business meeting"
     }
   ]
 }

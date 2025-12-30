@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useMemo, useContext } from 'react';
+import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, orderBy } from 'firebase/firestore';
-import type { Transaction, Budget, FinancialGoal, Account, Category } from '@/lib/types';
+import type { Transaction, Budget, FinancialGoal, Account } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -19,22 +19,13 @@ import { GoalCard } from "@/components/goals/GoalCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2 } from "lucide-react";
-import { CategoryChart } from "@/components/charts/CategoryChart";
-import { AccountCard } from '@/components/accounts/AccountCard';
-import { SettingsContext } from '@/contexts/SettingsContext';
-import { getIconComponent } from '@/lib/data';
 
 export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
-  const { settings } = useContext(SettingsContext);
 
   // Memoize Firestore queries
   const transactionsQuery = useMemoFirebase(() => 
-    user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc')) : null
-  , [firestore, user]);
-
-  const recentTransactionsQuery = useMemoFirebase(() =>
     user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc'), limit(5)) : null
   , [firestore, user]);
   
@@ -43,79 +34,30 @@ export default function DashboardPage() {
   , [firestore, user]);
 
   const budgetsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'users', user.uid, 'budgets')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'budgets'), limit(2)) : null
   , [firestore, user]);
 
   const goalsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'users', user.uid, 'financialGoals')) : null
-  , [firestore, user]);
-
-  const categoriesQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'users', user.uid, 'categories')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'financialGoals'), limit(3)) : null
   , [firestore, user]);
 
   // Fetch data using hooks
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
-  const { data: recentTransactions, isLoading: recentTransactionsLoading } = useCollection<Transaction>(recentTransactionsQuery);
   const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
   const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsQuery);
   const { data: goals, isLoading: goalsLoading } = useCollection<FinancialGoal>(goalsQuery);
-  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  const { summary, expenseChartData, expenseChartConfig } = useMemo(() => {
-    if (!transactions || !accounts || !categories) return { 
-      summary: { income: 0, expenses: 0, balance: 0 }, 
-      expenseChartData: [], 
-      expenseChartConfig: {} 
-    };
+  const { summary } = useMemo(() => {
+    if (!transactions || !accounts) return { summary: { income: 0, expenses: 0, balance: 0 } };
 
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    
-    const currentMonthTransactions = transactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-    });
-
-    const income = currentMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    
+    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-    const spendingByCategory: Record<string, number> = {};
-    currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
-        spendingByCategory[t.categoryId] = (spendingByCategory[t.categoryId] || 0) + t.amount;
-    });
-
-    const chartData = Object.entries(spendingByCategory).map(([categoryId, amount], index) => {
-      const category = categories.find(c => c.id === categoryId);
-      return {
-        id: categoryId,
-        name: category?.name || 'Desconhecido',
-        amount,
-        icon: category?.icon,
-        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
-      };
-    }).sort((a, b) => b.amount - a.amount);
-
-    const chartConfig = chartData.reduce((acc, { name, fill, icon }) => {
-      acc[name] = {
-        label: name,
-        color: fill,
-        icon: icon ? getIconComponent(icon) : undefined,
-      };
-      return acc;
-    }, {} as any);
-
-    return { 
-      summary: { income, expenses, balance: totalBalance }, 
-      expenseChartData: chartData,
-      expenseChartConfig: chartConfig,
-    };
-  }, [transactions, accounts, categories]);
+    return { summary: { income, expenses, balance: totalBalance } };
+  }, [transactions, accounts]);
   
-  const isLoading = transactionsLoading || recentTransactionsLoading || budgetsLoading || goalsLoading || accountsLoading || categoriesLoading;
+  const isLoading = transactionsLoading || budgetsLoading || goalsLoading || accountsLoading;
 
   if (isLoading) {
     return (
@@ -148,136 +90,84 @@ export default function DashboardPage() {
             icon={<TrendingDown className="text-red-500" />}
           />
           <SummaryCard
-            title="Saldo Total em Contas"
+            title="Saldo Total"
             value={summary.balance}
             icon={<Wallet />}
           />
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           {settings['expenses-chart'] && (
-            <div className="lg:col-span-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Despesas por Categoria</CardTitle>
-                      <CardDescription>
-                        Visão geral dos seus gastos no mês.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pl-2">
-                      <CategoryChart data={expenseChartData} config={expenseChartConfig} />
-                    </CardContent>
-                  </Card>
-              </div>
-           )}
-          {settings['accounts'] && (
-            <div>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Contas</CardTitle>
-                    <CardDescription>Seus saldos atuais.</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/accounts">
-                      Ver todas <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {accounts && accounts.length > 0 ? (
-                    accounts.slice(0, 3).map((account) => (
-                      <AccountCard key={account.id} account={account} isCompact />
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {settings['pending-transactions'] && (
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Transações Recentes</CardTitle>
-                    <CardDescription>
-                      Suas últimas 5 movimentações.
-                    </CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/transactions">
-                      Ver todas <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <TransactionList transactions={recentTransactions || []} accounts={accounts || []} categories={categories || []} tags={[]} />
-                </CardContent>
-              </Card>
-            </div>
-          )}
-           {settings['budget-summary'] && (
-            <div>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Transações Recentes</CardTitle>
+                  <CardDescription>
+                    Suas últimas 5 movimentações.
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/transactions">
+                    Ver todas <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <TransactionList transactions={transactions || []} accounts={accounts || []} />
+              </CardContent>
+            </Card>
+          </div>
+          <div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                 <div>
                     <CardTitle>Planejamento</CardTitle>
                     <CardDescription>Seu progresso de gastos este mês.</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
+                 </div>
+                 <Button variant="ghost" size="sm" asChild>
                     <Link href="/budgets">
                       Ver todos <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {budgets && budgets.length > 0 ? (
-                    budgets.slice(0, 2).map((budget) => (
-                      <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} category={categories?.find(c=>c.id === budget.categoryId)} isCompact />
-                    ))
-                  ) : (
-                      <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </section>
-
-        {settings['goals'] && (
-          <section>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                      <CardTitle>Objetivos Financeiros</CardTitle>
-                      <CardDescription>Acompanhe seu progresso para realizar seus sonhos.</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/goals">
-                      Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {goals && goals.length > 0 ? (
-                  goals.slice(0, 3).map((goal) => (
-                    <GoalCard key={goal.id} goal={goal} />
+              <CardContent className="space-y-4">
+                {budgets && budgets.length > 0 ? (
+                  budgets.map((budget) => (
+                    <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} />
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground col-span-full">Nenhum objetivo encontrado.</p>
+                    <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
                 )}
               </CardContent>
             </Card>
-          </section>
-        )}
+          </div>
+        </section>
+        
+        <section>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Objetivos Financeiros</CardTitle>
+                    <CardDescription>Acompanhe seu progresso para realizar seus sonhos.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/goals">
+                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {goals && goals.length > 0 ? (
+                goals.map((goal) => (
+                  <GoalCard key={goal.id} goal={goal} />
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground col-span-full">Nenhum objetivo encontrado.</p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </main>
     </div>
   );
 }
-
-    

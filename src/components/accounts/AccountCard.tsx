@@ -31,10 +31,9 @@ import { AddAccountDialog } from "./AddAccountDialog";
 
 type AccountCardProps = {
   account: Account;
-  isCompact?: boolean;
 };
 
-export function AccountCard({ account, isCompact = false }: AccountCardProps) {
+export function AccountCard({ account }: AccountCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -53,20 +52,6 @@ export function AccountCard({ account, isCompact = false }: AccountCardProps) {
     }
     deleteAccount(firestore, user.uid, account.id);
     toast({ title: 'Sucesso', description: 'Conta removida.' });
-  }
-
-  if (isCompact) {
-    return (
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                    <Landmark className="h-4 w-4" />
-                </div>
-                <span className="font-medium">{account.name}</span>
-            </div>
-            <span className={cn("font-semibold", account.balance < 0 && "text-destructive")}>{formatCurrency(account.balance)}</span>
-        </div>
-    )
   }
 
   return (

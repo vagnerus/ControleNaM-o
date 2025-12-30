@@ -3,8 +3,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthGate } from '@/components/auth/AuthGate';
-import { SettingsProvider } from '@/contexts/SettingsContext';
-import { ThemeProvider } from '@/contexts/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'ControleNaMão',
@@ -24,21 +22,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SettingsProvider>
-            <FirebaseClientProvider>
-              <AuthGate>
-                {children}
-              </AuthGate>
-            </FirebaseClientProvider>
-          </SettingsProvider>
-          <Toaster />
-        </ThemeProvider>
+        <FirebaseClientProvider>
+          <AuthGate>
+            {children}
+          </AuthGate>
+        </FirebaseClientProvider>
+        <Toaster />
       </body>
     </html>
   );

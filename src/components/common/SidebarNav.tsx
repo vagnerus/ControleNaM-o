@@ -10,25 +10,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
-import {
-  Home,
-  Landmark,
-  ArrowRightLeft,
-  CreditCard,
-  ListChecks,
-  BarChart,
-  Settings,
-  Target,
-  Bookmark,
-  Tags,
-  Calendar,
-  Activity,
-  FileUp,
-  FileDown,
-  LogOut
-} from "lucide-react";
+import { Home, Landmark, ArrowRightLeft, LogOut } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -46,25 +29,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
-const mainMenuItems = [
+const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/accounts", label: "Contas", icon: Landmark },
   { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
-  { href: "/cards", label: "Cartões de crédito", icon: CreditCard },
-  { href: "/budgets", label: "Planejamento", icon: ListChecks },
-  { href: "/reports", label: "Relatórios", icon: BarChart },
 ];
-
-const secondaryMenuItems = [
-    { href: "/settings", label: "Configurações", icon: Settings },
-    { href: "/goals", label: "Objetivos", icon: Target },
-    { href: "/categories", label: "Categorias", icon: Bookmark },
-    { href: "/tags", label: "Tags", icon: Tags },
-    { href: "/calendar", label: "Calendário", icon: Calendar },
-    { href: "/performance", label: "Meu Desempenho", icon: Activity },
-    { href: "/import", label: "Importar transações", icon: FileUp },
-    { href: "/export", label: "Exportar transações", icon: FileDown },
-]
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -116,33 +85,17 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {mainMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
                   <item.icon />
                   <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          <SidebarSeparator />
-           {secondaryMenuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-               <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

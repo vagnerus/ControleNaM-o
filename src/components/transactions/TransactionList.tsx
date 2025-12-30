@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Transaction, Account, Category, Tag } from "@/lib/types";
-import { deleteTransaction, getIconComponent } from "@/lib/data";
+import { deleteTransaction, getCategoryDetails } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
     }
 
     const getTags = (tagIds: string[] = []) => {
-        return tags?.filter(tag => tagIds.includes(tag.id)) || [];
+        return tags?.filter(tag => tag.id === tagId) || [];
     }
 
     const formatCurrency = (value: number) =>
@@ -69,29 +69,16 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
         return accounts.find(acc => acc.id === accountId)?.name || 'Conta desconhecida';
     }
 
-    const handleDelete = async (transaction: Transaction) => {
+    const handleDelete = (transactionId: string) => {
         if (!user) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado.' });
             return;
         }
-        try {
-            await deleteTransaction(firestore, user.uid, transaction);
-            toast({ title: 'Sucesso', description: transaction.installmentId ? 'Parcelas removidas com sucesso.' : 'Transação removida com sucesso.' });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível remover a transação.' });
-        }
+        deleteTransaction(firestore, user.uid, transactionId);
+        toast({ title: 'Sucesso', description: 'Transação removida.' });
     };
 
     const openEditDialog = (transaction: Transaction) => {
-        if (transaction.installmentId) {
-            toast({
-                variant: "destructive",
-                title: "Edição não permitida",
-                description: "Não é possível editar uma única parcela. Remova a compra e crie-a novamente.",
-            });
-            return;
-        }
         setSelectedTransaction(transaction);
         setIsEditDialogOpen(true);
     };
@@ -101,7 +88,6 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="hidden sm:table-cell">Categoria</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead className="hidden md:table-cell">Conta</TableHead>
             <TableHead className="hidden md:table-cell">Data</TableHead>
@@ -112,34 +98,17 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
         <TableBody>
           {transactions.map((transaction) => {
             const category = getCategory(transaction.categoryId);
-            const Icon = category ? getIconComponent(category.icon) : null;
             const transactionTags = getTags(transaction.tagIds);
             return (
               <TableRow key={transaction.id}>
-                <TableCell className="hidden sm:table-cell">
-                  {category && Icon && (
-                    <Badge variant="outline" className="flex w-fit items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {category.name}
-                    </Badge>
-                  )}
-                </TableCell>
                 <TableCell>
                   <div className="font-medium">{transaction.description}</div>
-                  <div className="text-sm text-muted-foreground sm:hidden">
-                    {category?.name}
-                  </div>
-                   <div className="text-sm text-muted-foreground md:hidden">
-                    {getAccountName(transaction.accountId)} - {format(new Date(transaction.date), "dd/MM/yyyy")}
+                  <div className="text-sm text-muted-foreground">
+                    {category?.name || 'Sem categoria'}
                   </div>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {transaction.totalInstallments && transaction.totalInstallments > 1 && (
-                        <Badge variant="secondary">
-                            Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
-                        </Badge>
-                    )}
                      {transactionTags.map(tag => (
-                         <Badge key={tag.id} variant="outline" className="font-normal">{tag.name}</Badge>
+                         <Badge key={tag.id} variant="outline">{tag.name}</Badge>
                      ))}
                   </div>
                 </TableCell>
@@ -185,14 +154,13 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    {transaction.installmentId ? 
-                                    "Isso excluirá permanentemente esta e todas as outras parcelas relacionadas. Essa ação não pode ser desfeita." :
-                                    "Essa ação não pode ser desfeita. Isso excluirá permanentemente a transação."}
+                                    Essa ação não pode ser desfeita. Isso excluirá permanentemente a
+                                    transação.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(transaction)} className="bg-destructive hover:bg-destructive/90">
+                                <AlertDialogAction onClick={() => handleDelete(transaction.id)} className="bg-destructive hover:bg-destructive/90">
                                     Excluir
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -215,5 +183,3 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
     </div>
   );
 }
-
-    

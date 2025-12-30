@@ -1,7 +1,6 @@
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "./ThemeToggle";
 
 type HeaderProps = {
   title: string;
@@ -17,7 +16,6 @@ export function Header({ title, children }: HeaderProps) {
       </div>
       <div className="ml-auto flex items-center gap-2">
         {children}
-        <ThemeToggle />
       </div>
     </header>
   );

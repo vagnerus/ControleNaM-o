@@ -40,13 +40,13 @@ export function AddTransactionDialog({ open: controlledOpen, onOpenChange: setCo
     <Dialog open={open} onOpenChange={setOpen}>
         {!transaction && (
             <DialogTrigger asChild>
-                <Button size="sm">
+                <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Adicionar Transação
                 </Button>
             </DialogTrigger>
         )}
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

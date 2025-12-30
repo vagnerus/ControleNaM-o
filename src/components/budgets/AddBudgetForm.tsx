@@ -13,6 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,14 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveBudget, getIconComponent } from "@/lib/data";
+import { saveBudget } from "@/lib/data";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { Budget, Category } from "@/lib/types";
 import { useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
-import { MagicInput } from "../common/MagicInput";
 
 
 const formSchema = z.object({
@@ -134,17 +134,11 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
                 </FormControl>
                 <SelectContent>
                   {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
-                  {availableCategories?.map((cat) => {
-                    const Icon = getIconComponent(cat.icon);
-                    return (
-                        <SelectItem key={cat.id} value={cat.id}>
-                        <div className="flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            {cat.name}
-                        </div>
-                        </SelectItem>
-                    )
-                  })}
+                  {availableCategories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -158,12 +152,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
             <FormItem>
               <FormLabel>Valor do Orçamento</FormLabel>
               <FormControl>
-                <MagicInput 
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    placeholder="500,00"
-                />
+                <Input type="number" placeholder="Ex: 500.00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

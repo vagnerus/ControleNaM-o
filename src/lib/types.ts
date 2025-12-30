@@ -1,5 +1,3 @@
-import type { LucideIcon } from "lucide-react";
-
 export type Transaction = {
   id: string;
   type: 'income' | 'expense';
@@ -9,16 +7,13 @@ export type Transaction = {
   categoryId: string;
   accountId: string;
   creditCardId?: string;
-  installmentId?: string; // ID to group installments
-  installmentNumber?: number;
-  totalInstallments?: number;
   tagIds?: string[];
 };
 
 export type Category = {
   id: string;
   name: string;
-  icon: string; // Lucide icon name as string
+  icon?: string; // Lucide icon name as string
   type: 'income' | 'expense';
 };
 
@@ -52,13 +47,6 @@ export type FinancialGoal = {
   currentAmount: number;
   monthlySaving: number;
   imageId: string;
-};
-
-// Represents an icon that can be selected for a category
-export type Icon = {
-  id: string;
-  name: string;
-  component: LucideIcon;
 };
 
 export type Tag = {

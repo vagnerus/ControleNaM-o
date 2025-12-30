@@ -20,7 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
 import type { Account } from "@/lib/types";
 import { useEffect } from "react";
-import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome da conta é muito curto."),
@@ -105,13 +104,7 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
             <FormItem>
               <FormLabel>Saldo {account ? 'Atual' : 'Inicial'}</FormLabel>
               <FormControl>
-                <MagicInput 
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    placeholder="0,00"
-                    disabled={!!account}
-                />
+                <Input type="number" placeholder="Ex: 1000.00" {...field} disabled={!!account} />
               </FormControl>
               <FormMessage />
             </FormItem>

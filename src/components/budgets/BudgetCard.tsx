@@ -1,6 +1,6 @@
 
-import { getIconComponent, deleteBudget } from "@/lib/data";
-import type { Budget, Transaction, Category } from "@/lib/types";
+import { getCategoryDetails, deleteBudget } from "@/lib/data";
+import type { Budget, Transaction } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -31,28 +31,17 @@ import { AddBudgetDialog } from "./AddBudgetDialog";
 type BudgetCardProps = {
   budget: Budget;
   transactions: Transaction[];
-  category?: Category;
-  isCompact?: boolean;
 };
 
-export function BudgetCard({ budget, transactions, category, isCompact = false }: BudgetCardProps) {
+export function BudgetCard({ budget, transactions }: BudgetCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const spent = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    
     return transactions
-        .filter(t => 
-            t.categoryId === budget.categoryId && 
-            t.type === 'expense' &&
-            new Date(t.date).getMonth() === currentMonth &&
-            new Date(t.date).getFullYear() === currentYear
-        )
+        .filter(t => t.categoryId === budget.categoryId && t.type === 'expense')
         .reduce((sum, t) => sum + t.amount, 0);
   }, [transactions, budget.categoryId]);
   
@@ -75,38 +64,11 @@ export function BudgetCard({ budget, transactions, category, isCompact = false }
     deleteBudget(firestore, user.uid, budget.id);
     toast({ title: 'Sucesso', description: 'Orçamento removido.' });
   };
-  
-  const Icon = category ? getIconComponent(category.icon) : null;
-
-  if (isCompact) {
-    return (
-        <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2 font-medium">
-                    {Icon && <Icon className="h-4 w-4" />}
-                    <span>{budget.categoryName}</span>
-                </div>
-                <span className="text-muted-foreground">{formatCurrency(spent)}</span>
-            </div>
-            <Progress value={percentage} indicatorClassName={progressColor} />
-        </div>
-    )
-  }
 
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between">
-        <div className="flex items-center gap-3">
-          {Icon && (
-            <div className="p-3 rounded-lg bg-primary/10 text-primary">
-                <Icon className="h-6 w-6" />
-            </div>
-          )}
-          <div>
-            <CardTitle>{budget.categoryName}</CardTitle>
-            <p className="text-sm text-muted-foreground">Planejamento Mensal</p>
-          </div>
-        </div>
+        <CardTitle>{budget.categoryName}</CardTitle>
         <AlertDialog>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -173,5 +135,3 @@ export function BudgetCard({ budget, transactions, category, isCompact = false }
     </Card>
   );
 }
-
-    
