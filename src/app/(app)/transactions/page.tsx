@@ -9,6 +9,7 @@ import { Header } from "@/components/common/Header";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TransactionsPage() {
   const { user } = useUser();
@@ -37,23 +38,37 @@ export default function TransactionsPage() {
 
   const isLoading = transactionsLoading || accountsLoading || categoriesLoading || tagsLoading;
 
-  if (isLoading) {
-    return (
-      <>
-        <Header title="Transações">
-          <AddTransactionDialog />
-        </Header>
-        <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      </>
-    );
-  }
-
   const safeTransactions = transactions || [];
   const safeAccounts = accounts || [];
   const safeCategories = categories || [];
   const safeTags = tags || [];
+  
+  const incomeTransactions = safeTransactions.filter(t => t.type === 'income');
+  const expenseTransactions = safeTransactions.filter(t => t.type === 'expense');
+
+  const renderTransactionList = (list: Transaction[]) => {
+    if (isLoading) {
+      return (
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (list.length === 0) {
+      return (
+        <Card className="flex flex-col items-center justify-center h-96 border-dashed mt-4">
+          <CardHeader className="text-center">
+            <CardTitle>Nenhuma transação encontrada</CardTitle>
+            <CardDescription>Adicione sua primeira transação para começar.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AddTransactionDialog />
+          </CardContent>
+        </Card>
+      );
+    }
+    return <TransactionList transactions={list} accounts={safeAccounts} categories={safeCategories} tags={safeTags} />;
+  };
   
   return (
     <>
@@ -67,14 +82,14 @@ export default function TransactionsPage() {
             <TabsTrigger value="income">Receitas</TabsTrigger>
             <TabsTrigger value="expenses">Despesas</TabsTrigger>
           </TabsList>
-          <TabsContent value="all">
-            <TransactionList transactions={safeTransactions} accounts={safeAccounts} categories={safeCategories} tags={safeTags} />
+          <TabsContent value="all" className="mt-4">
+            {renderTransactionList(safeTransactions)}
           </TabsContent>
-          <TabsContent value="income">
-            <TransactionList transactions={safeTransactions.filter(t => t.type === 'income')} accounts={safeAccounts} categories={safeCategories} tags={safeTags} />
+          <TabsContent value="income" className="mt-4">
+            {renderTransactionList(incomeTransactions)}
           </TabsContent>
-          <TabsContent value="expenses">
-            <TransactionList transactions={safeTransactions.filter(t => t.type === 'expense')} accounts={safeAccounts} categories={safeCategories} tags={safeTags} />
+          <TabsContent value="expenses" className="mt-4">
+            {renderTransactionList(expenseTransactions)}
           </TabsContent>
         </Tabs>
       </main>
