@@ -228,10 +228,6 @@
         "creditLimit": {
           "type": "number",
           "description": "The credit limit of the card."
-        },
-        "availableLimit": {
-          "type": "number",
-          "description": "The available credit limit on the card."
         }
       },
       "required": [
@@ -292,6 +288,11 @@
         "name": {
           "type": "string",
           "description": "The name of the financial goal."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of the financial goal.",
+          "enum": ["saving", "debt"]
         },
         "targetAmount": {
           "type": "number",
@@ -370,188 +371,61 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}/transactions/{transactionId}",
-        "definition": {
-          "entityName": "Transaction",
-          "schema": {
-            "$ref": "#/backend/entities/Transaction"
-          },
-          "description": "Stores financial transactions for a user. Each transaction includes details such as amount, date, description, category, and account. Includes denormalized data from Category and Account for authorization independence and faster querying.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the transaction."
-            },
-            {
-              "name": "transactionId",
-              "description": "The ID of the transaction."
-            }
-          ]
-        }
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
       },
-      {
-        "path": "/users/{userId}/categories/{categoryId}",
-        "definition": {
-          "entityName": "Category",
-          "schema": {
-            "$ref": "#/backend/entities/Category"
-          },
-          "description": "Stores categories for classifying transactions. Each category includes a name, description, and indication of whether it is for income or expenses.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the category."
-            },
-            {
-              "name": "categoryId",
-              "description": "The ID of the category."
-            }
-          ]
-        }
+      "description": "Stores financial transactions for a user. Each transaction includes details such as amount, date, description, category, and account."
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": {
+        "$ref": "#/entities/Category"
       },
-      {
-        "path": "/users/{userId}/accounts/{accountId}",
-        "definition": {
-          "entityName": "Account",
-          "schema": {
-            "$ref": "#/backend/entities/Account"
-          },
-          "description": "Stores bank accounts or cash accounts for a user. Each account includes a name, description, and current balance.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the account."
-            },
-            {
-              "name": "accountId",
-              "description": "The ID of the account."
-            }
-          ]
-        }
+      "description": "Stores categories for classifying transactions. Each category includes a name, description, and indication of whether it is for income or expenses."
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": {
+        "$ref": "#/entities/Account"
       },
-      {
-        "path": "/users/{userId}/attachments/{attachmentId}",
-        "definition": {
-          "entityName": "Attachment",
-          "schema": {
-            "$ref": "#/backend/entities/Attachment"
-          },
-          "description": "Stores attachments for transactions, such as receipt images. Each attachment includes a file name, file type, file size, and file data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the attachment."
-            },
-            {
-              "name": "attachmentId",
-              "description": "The ID of the attachment."
-            }
-          ]
-        }
+      "description": "Stores bank accounts or cash accounts for a user. Each account includes a name, description, and current balance."
+    },
+    "/users/{userId}/attachments/{attachmentId}": {
+      "schema": {
+        "$ref": "#/entities/Attachment"
       },
-      {
-        "path": "/users/{userId}/tags/{tagId}",
-        "definition": {
-          "entityName": "Tag",
-          "schema": {
-            "$ref": "#/backend/entities/Tag"
-          },
-          "description": "Stores tags for grouping transactions. Each tag includes a name.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the tag."
-            },
-            {
-              "name": "tagId",
-              "description": "The ID of the tag."
-            }
-          ]
-        }
+      "description": "Stores attachments for transactions, such as receipt images. Each attachment includes a file name, file type, file size, and file data."
+    },
+    "/users/{userId}/tags/{tagId}": {
+      "schema": {
+        "$ref": "#/entities/Tag"
       },
-      {
-        "path": "/users/{userId}/creditCards/{creditCardId}",
-        "definition": {
-          "entityName": "CreditCard",
-          "schema": {
-            "$ref": "#/backend/entities/CreditCard"
-          },
-          "description": "Stores credit cards for a user. Each credit card includes details such as name, card number, closing date, due date, credit limit, and available limit.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the credit card."
-            },
-            {
-              "name": "creditCardId",
-              "description": "The ID of the credit card."
-            }
-          ]
-        }
+      "description": "Stores tags for grouping transactions. Each tag includes a name."
+    },
+    "/users/{userId}/creditCards/{creditCardId}": {
+      "schema": {
+        "$ref": "#/entities/CreditCard"
       },
-      {
-        "path": "/users/{userId}/budgets/{budgetId}",
-        "definition": {
-          "entityName": "Budget",
-          "schema": {
-            "$ref": "#/backend/entities/Budget"
-          },
-          "description": "Stores budgets for a user, related to specific categories. Each budget includes a category ID, amount, start date, and end date.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the budget."
-            },
-            {
-              "name": "budgetId",
-              "description": "The ID of the budget."
-            }
-          ]
-        }
+      "description": "Stores credit cards for a user. Each credit card includes details such as name, card number, closing date, due date, credit limit, and available limit."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": {
+        "$ref": "#/entities/Budget"
       },
-      {
-        "path": "/users/{userId}/financialGoals/{financialGoalId}",
-        "definition": {
-          "entityName": "FinancialGoal",
-          "schema": {
-            "$ref": "#/backend/entities/FinancialGoal"
-          },
-          "description": "Stores financial goals for a user. Each financial goal includes a name, target amount, current amount, monthly contribution, and target date.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the financial goal."
-            },
-            {
-              "name": "financialGoalId",
-              "description": "The ID of the financial goal."
-            }
-          ]
-        }
+      "description": "Stores budgets for a user, related to specific categories. Each budget includes a category ID, amount, start date, and end date."
+    },
+    "/users/{userId}/financialGoals/{financialGoalId}": {
+      "schema": {
+        "$ref": "#/entities/FinancialGoal"
       },
-      {
-        "path": "/users/{userId}/reports/{reportId}",
-        "definition": {
-          "entityName": "Report",
-          "schema": {
-            "$ref": "#/backend/entities/Report"
-          },
-          "description": "Stores financial reports generated by a user. Each report includes a name, type, date range, and the report data.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the report."
-            },
-            {
-              "name": "reportId",
-              "description": "The ID of the report."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to manage financial transactions, categories, accounts, and related data for the 'ControleNaMão' application. The structure emphasizes path-based ownership for private user data and denormalization to ensure authorization independence and efficient querying. This is achieved by storing all user-specific data under the `/users/{userId}` path and avoiding `get()` calls in security rules. The app uses the strategy Access Modeling, standardizing the authorization model through Membership Map (`members: {uid1: \"role\", uid2: \"role\"}`).\n\nAuthorization Independence (CRITICAL): All data is stored under the user's document, which avoids the need to check other collections to authorize the data access. This structure ensures that security rules can be written without relying on parent document data, enabling atomic operations and simplifying debugging. Each user's data is self-contained, so all authorization can be managed solely by using `request.auth.uid`.\n\nQAPs (Rules are not Filters): Segregation is implemented by storing all user-specific data under `/users/{userId}`, ensuring secure list operations. Since all documents in a collection share the same security requirements, rules do not act as filters. The membership model is not applicable here since all data is private and owned by the user.\n\nInvariants: Ownership is maintained through the path-based structure (`/users/{userId}/{collection}/{documentId}`). Timestamps can be managed within each document, and denormalized data, such as category names in transaction documents, can be maintained with Firestore triggers.\n\nExplicit State Modeling: The design encourages the use of a `status` field (e.g., in Transactions) to represent the state of the data explicitly (e.g., `PENDING`, `CLEARED`).\n\nPredictable Schema: Dynamic keys are avoided. Arrays of objects with static keys are preferred to ensure a predictable schema and facilitate easier querying and rule creation.\n"
+      "description": "Stores financial goals for a user. Each financial goal includes a name, target amount, current amount, monthly contribution, and target date."
+    },
+    "/users/{userId}/reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/Report"
+      },
+      "description": "Stores financial reports generated by a user. Each report includes a name, type, date range, and the report data."
+    }
   }
 }
+
+    
