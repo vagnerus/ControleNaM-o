@@ -1,11 +1,10 @@
-
 'use client';
 import type { Account, Category, CreditCard, Tag, Transaction } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { TransactionList } from "../transactions/TransactionList";
 import { Button } from "../ui/button";
-import { MoreVertical, Trash2, Edit } from "lucide-react";
+import { MoreVertical, Trash2, Edit, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { AddCardDialog } from "./AddCardDialog";
 import { BrandIcon } from "./BrandIcon";
+import Link from "next/link";
 
 
 type CreditCardViewProps = {
@@ -71,6 +71,13 @@ export function CreditCardView({ cardData, accounts, categories, tags }: CreditC
                   <CardTitle>{cardData.name}</CardTitle>
                   <CardDescription>Gerenciamento da fatura e limite do seu cartão.</CardDescription>
               </div>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                    <Link href={`/cards/${cardData.id}`}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Ver Fatura
+                    </Link>
+                </Button>
                 <AlertDialog>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -107,6 +114,7 @@ export function CreditCardView({ cardData, accounts, categories, tags }: CreditC
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+              </div>
           </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
@@ -158,7 +166,7 @@ export function CreditCardView({ cardData, accounts, categories, tags }: CreditC
               <h3 className="text-lg font-semibold mb-4">Transações Recentes do Cartão</h3>
               <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                   {cardData.transactions.length > 0 ? (
-                      <TransactionList transactions={cardData.transactions} accounts={accounts} categories={categories} tags={tags} />
+                      <TransactionList transactions={cardData.transactions.slice(0, 10)} accounts={accounts} categories={categories} tags={tags} />
                   ) : (
                       <div className="text-center py-12 text-muted-foreground">
                           Nenhuma transação neste cartão ainda.
