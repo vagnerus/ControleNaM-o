@@ -34,13 +34,14 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useEffect, useState } from "react";
-import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
+import type { Category, CreditCard, Account, Transaction, Tag } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { MagicInput } from "../common/MagicInput";
 import { Switch } from "../ui/switch";
+import { MultiSelect, Option } from "../ui/multi-select";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -60,6 +61,7 @@ const formSchema = z.object({
   creditCardId: z.string().optional(),
   isInstallment: z.boolean().default(false),
   totalInstallments: z.coerce.number().optional(),
+  tags: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
 }).refine(data => {
     if (data.isInstallment && (!data.totalInstallments || data.totalInstallments < 2)) {
         return false;
@@ -91,6 +93,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       creditCardId: "",
       isInstallment: false,
       totalInstallments: 2,
+      tags: [],
     },
   });
 
@@ -114,17 +117,26 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   , [firestore, user]);
   const { data: accounts } = useCollection<Account>(accountsQuery);
 
+  const tagsQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'users', user.uid, 'tags')) : null
+  , [firestore, user]);
+  const { data: tags } = useCollection<Tag>(tagsQuery);
+  const tagOptions = useMemo(() => (tags || []).map(tag => ({ value: tag.id, label: tag.name })), [tags]);
+
+
   useEffect(() => {
     if (transaction) {
+      const selectedTags = tagOptions.filter(opt => transaction.tagIds?.includes(opt.value));
       form.reset({
         ...transaction,
         amount: transaction.amount || 0,
         date: new Date(transaction.date),
-        creditCardId: transaction.creditCardId || ""
+        creditCardId: transaction.creditCardId || "",
+        tags: selectedTags,
       });
       setIsInstallment(!!transaction.isInstallment);
     }
-  }, [transaction, form]);
+  }, [transaction, form, tagOptions]);
 
 
   useEffect(() => {
@@ -166,6 +178,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     try {
         saveTransaction(firestore, user.uid, { 
             ...values,
+            tagIds: values.tags?.map(t => t.value),
             date: values.date.toISOString(),
             creditCardId: values.creditCardId || undefined
         }, transaction?.id);
@@ -341,6 +354,24 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                 )}
             </div>
         )}
+        
+        <FormField
+            control={form.control}
+            name="tags"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Tags (Opcional)</FormLabel>
+                    <MultiSelect
+                        selected={field.value || []}
+                        options={tagOptions}
+                        placeholder="Selecione as tags"
+                        onChange={field.onChange}
+                        className="w-full"
+                    />
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
 
 
         <FormField

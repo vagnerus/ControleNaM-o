@@ -106,9 +106,9 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
                   <div className="text-sm text-muted-foreground">
                     {category?.name || 'Sem categoria'}
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                   <div className="flex flex-wrap gap-1 mt-1">
                      {transactionTags.map(tag => (
-                         <Badge key={tag.id} variant="outline">{tag.name}</Badge>
+                         <Badge key={tag.id} variant="outline" className="font-normal">{tag.name}</Badge>
                      ))}
                   </div>
                 </TableCell>
