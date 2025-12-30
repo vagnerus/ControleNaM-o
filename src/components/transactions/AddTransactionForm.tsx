@@ -27,13 +27,13 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { addTransaction, getCategories } from "@/lib/data";
+import { saveTransaction, getCategories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
-import type { Category, CreditCard, Account } from "@/lib/types";
+import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { Checkbox } from "../ui/checkbox";
@@ -61,9 +61,10 @@ const formSchema = z.object({
 
 type AddTransactionFormProps = {
     onFinished?: () => void;
+    transaction?: Transaction;
 };
 
-export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
+export function AddTransactionForm({ onFinished, transaction }: AddTransactionFormProps) {
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const { user } = useUser();
@@ -89,13 +90,26 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (transaction) {
+      form.reset({
+        ...transaction,
+        date: new Date(transaction.date),
+        isInstallment: transaction.totalInstallments ? transaction.totalInstallments > 1 : false,
+      });
+    }
+  }, [transaction, form]);
+
+
   const transactionType = form.watch("type");
   const isInstallment = form.watch("isInstallment");
 
   useEffect(() => {
     const fetchedCategories = getCategories(transactionType);
     setCategories(fetchedCategories);
-    form.setValue("category", "");
+    if (form.getValues('type') !== transactionType) {
+        form.setValue("category", "");
+    }
   }, [transactionType, form]);
 
   useEffect(() => {
@@ -111,7 +125,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Você precisa estar logado para adicionar uma transação.",
+            description: "Você precisa estar logado para salvar uma transação.",
         });
         return;
     }
@@ -130,14 +144,14 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
 
 
     try {
-        addTransaction(firestore, user.uid, { 
+        saveTransaction(firestore, user.uid, { 
             ...values, 
             date: values.date.toISOString(),
             totalInstallments: values.isInstallment ? values.totalInstallments : 1,
-        });
+        }, transaction?.id);
         toast({
             title: "Sucesso!",
-            description: "Transação adicionada com sucesso.",
+            description: transaction ? "Transação atualizada com sucesso." : "Transação adicionada com sucesso.",
         });
         form.reset();
         if (onFinished) {
@@ -147,7 +161,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Não foi possível adicionar a transação. Verifique os logs para mais detalhes.",
+            description: "Não foi possível salvar a transação.",
         });
     }
   }
@@ -161,7 +175,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo de Transação</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!transaction}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -251,7 +265,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(value === '' ? undefined : value)} value={field.value}>
+                    <Select onValueChange={(value) => field.onChange(value === '' ? undefined : value)} value={field.value} disabled={!!transaction}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Nenhum" />
@@ -272,7 +286,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
             />
         )}
         
-        {transactionType === 'expense' && form.getValues('creditCardId') && (
+        {transactionType === 'expense' && form.getValues('creditCardId') && !transaction && (
             <div className="space-y-4 rounded-md border p-4">
                 <FormField
                     control={form.control}
@@ -283,6 +297,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
                             <Checkbox
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
+                                disabled={!!transaction}
                             />
                         </FormControl>
                         <div className="space-y-1 leading-none">
@@ -301,7 +316,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
                             <FormItem>
                             <FormLabel>Número de Parcelas</FormLabel>
                             <FormControl>
-                                <Input type="number" min="2" placeholder="Ex: 12" {...field} />
+                                <Input type="number" min="2" placeholder="Ex: 12" {...field} disabled={!!transaction} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -369,7 +384,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar Transação
+            Salvar
         </Button>
       </form>
     </Form>

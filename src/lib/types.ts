@@ -9,6 +9,7 @@ export type Transaction = {
   category: string;
   accountId: string;
   creditCardId?: string;
+  installmentId?: string; // ID to group installments
   installmentNumber?: number;
   totalInstallments?: number;
 };
@@ -40,7 +41,6 @@ export type Budget = {
   id: string;
   category: string;
   amount: number;
-  spent: number; // This will be calculated on the client
 };
 
 export type FinancialGoal = {

@@ -7,11 +7,34 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Transaction, Account } from "@/lib/types";
-import { getCategoryByName } from "@/lib/data";
+import { getCategoryByName, deleteTransaction } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "../ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useUser } from "@/firebase";
+import { AddTransactionDialog } from "./AddTransactionDialog";
+import { useState } from "react";
 
 type TransactionListProps = {
   transactions: Transaction[];
@@ -19,15 +42,48 @@ type TransactionListProps = {
 };
 
 export function TransactionList({ transactions, accounts }: TransactionListProps) {
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  
-  const getAccountName = (accountId: string) => {
-    return accounts.find(acc => acc.id === accountId)?.name || 'Conta desconhecida';
-  }
+    const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+    const formatCurrency = (value: number) =>
+        new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        }).format(value);
+    
+    const getAccountName = (accountId: string) => {
+        return accounts.find(acc => acc.id === accountId)?.name || 'Conta desconhecida';
+    }
+
+    const handleDelete = async (transaction: Transaction) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado.' });
+            return;
+        }
+        try {
+            await deleteTransaction(firestore, user.uid, transaction);
+            toast({ title: 'Sucesso', description: transaction.installmentId ? 'Parcelas removidas com sucesso.' : 'Transação removida com sucesso.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível remover a transação.' });
+        }
+    };
+
+    const openEditDialog = (transaction: Transaction) => {
+        if (transaction.installmentId) {
+            toast({
+                variant: "destructive",
+                title: "Edição não permitida",
+                description: "Não é possível editar uma única parcela. Por favor, remova o grupo de parcelas e crie novamente.",
+            });
+            return;
+        }
+        setSelectedTransaction(transaction);
+        setIsEditDialogOpen(true);
+    };
 
   return (
     <div className="w-full">
@@ -39,6 +95,7 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
             <TableHead className="hidden md:table-cell">Conta</TableHead>
             <TableHead className="hidden md:table-cell">Data</TableHead>
             <TableHead className="text-right">Valor</TableHead>
+            <TableHead className="w-[40px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -49,7 +106,7 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
                 <TableCell className="hidden sm:table-cell">
                   {category && (
                     <Badge variant="outline" className="flex w-fit items-center gap-2">
-                        <category.icon className="h-4 w-4" />
+                        {category.icon && <category.icon className="h-4 w-4" />}
                         {category.name}
                     </Badge>
                   )}
@@ -63,9 +120,9 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
                     {getAccountName(transaction.accountId)} - {format(new Date(transaction.date), "dd/MM/yyyy")}
                   </div>
                   {transaction.totalInstallments && transaction.totalInstallments > 1 && (
-                    <div className="text-xs text-muted-foreground">
+                    <Badge variant="secondary" className="mt-1">
                         Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
-                    </div>
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
@@ -85,11 +142,58 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
                   {transaction.type === "income" ? "+ " : "- "}
                   {formatCurrency(transaction.amount)}
                 </TableCell>
+                <TableCell>
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => openEditDialog(transaction)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Editar
+                                </DropdownMenuItem>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {transaction.installmentId ? 
+                                    "Isso excluirá permanentemente esta e todas as outras parcelas relacionadas. Essa ação não pode ser desfeita." :
+                                    "Essa ação não pode ser desfeita. Isso excluirá permanentemente a transação."}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(transaction)} className="bg-destructive hover:bg-destructive/90">
+                                    Excluir
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </TableCell>
               </TableRow>
             );
           })}
         </TableBody>
       </Table>
+       {selectedTransaction && (
+         <AddTransactionDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            transaction={selectedTransaction}
+            onFinished={() => setSelectedTransaction(null)}
+         />
+      )}
     </div>
   );
 }
