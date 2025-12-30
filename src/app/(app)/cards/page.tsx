@@ -2,7 +2,7 @@
 
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import type { CreditCard, Transaction } from '@/lib/types';
+import type { Account, CreditCard, Transaction } from '@/lib/types';
 import { Header } from "@/components/common/Header";
 import { CreditCardView } from "@/components/cards/CreditCardView";
 import { Loader2 } from 'lucide-react';
@@ -22,10 +22,15 @@ export default function CardsPage() {
     user ? query(collection(firestore, 'users', user.uid, 'transactions')) : null
   , [firestore, user]);
   
+  const accountsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'accounts') : null
+  , [firestore, user]);
+
   const { data: cards, isLoading: cardsLoading } = useCollection<CreditCard>(cardsQuery);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+  const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
 
-  const isLoading = cardsLoading || transactionsLoading;
+  const isLoading = cardsLoading || transactionsLoading || accountsLoading;
 
   const cardsWithTransactions = (cards || []).map(card => {
     const cardTransactions = (transactions || []).filter(
@@ -61,7 +66,7 @@ export default function CardsPage() {
         ) : (
             <div className="space-y-8">
                 {cardsWithTransactions.map((cardData) => (
-                    <CreditCardView key={cardData.id} cardData={cardData} />
+                    <CreditCardView key={cardData.id} cardData={cardData} accounts={accounts || []}/>
                 ))}
             </div>
         )}

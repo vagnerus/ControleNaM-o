@@ -33,7 +33,7 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
-import type { Category, CreditCard } from "@/lib/types";
+import type { Category, CreditCard, Account } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { Checkbox } from "../ui/checkbox";
@@ -50,6 +50,9 @@ const formSchema = z.object({
   }),
   category: z.string({
     required_error: "A categoria é obrigatória.",
+  }),
+  accountId: z.string({
+    required_error: "A conta é obrigatória.",
   }),
   creditCardId: z.string().optional(),
   isInstallment: z.boolean().default(false),
@@ -71,6 +74,11 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
   , [firestore, user]);
   const { data: cards } = useCollection<CreditCard>(cardsQuery);
   
+  const accountsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'accounts') : null
+  , [firestore, user]);
+  const { data: accounts } = useCollection<Account>(accountsQuery);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -186,6 +194,30 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         />
         <FormField
           control={form.control}
+          name="accountId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Conta</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {accounts?.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="category"
           render={({ field }) => (
             <FormItem>
@@ -219,7 +251,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={(value) => field.onChange(value === '' ? undefined : value)} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Nenhum" />

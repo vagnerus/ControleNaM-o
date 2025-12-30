@@ -1,5 +1,5 @@
 'use client';
-import type { CreditCard, Transaction } from "@/lib/types";
+import type { Account, CreditCard, Transaction } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { TransactionList } from "../transactions/TransactionList";
@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type CreditCardViewProps = {
   cardData: CreditCard & { transactions: Transaction[], spent: number };
+  accounts: Account[];
 };
 
 const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
@@ -39,7 +40,7 @@ const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
     return <div className="font-bold text-lg">CARD</div>;
 }
 
-export function CreditCardView({ cardData }: CreditCardViewProps) {
+export function CreditCardView({ cardData, accounts }: CreditCardViewProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -152,7 +153,7 @@ export function CreditCardView({ cardData }: CreditCardViewProps) {
             <h3 className="text-lg font-semibold mb-4">Transações Recentes do Cartão</h3>
             <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                 {cardData.transactions.length > 0 ? (
-                    <TransactionList transactions={cardData.transactions} />
+                    <TransactionList transactions={cardData.transactions} accounts={accounts} />
                 ) : (
                     <div className="text-center py-12 text-muted-foreground">
                         Nenhuma transação neste cartão ainda.

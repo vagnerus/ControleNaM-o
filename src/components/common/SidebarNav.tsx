@@ -21,6 +21,7 @@ import {
   Settings,
   CircleHelp,
   LogOut,
+  Landmark,
 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -42,9 +43,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 const menuItems = [
   { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
+  { href: "/accounts", label: "Contas", icon: Landmark },
+  { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/budgets", label: "Orçamentos", icon: PieChart },
   { href: "/goals", label: "Objetivos", icon: Target },
-  { href: "/cards", label: "Cartões", icon: CreditCard },
 ];
 
 export function SidebarNav() {

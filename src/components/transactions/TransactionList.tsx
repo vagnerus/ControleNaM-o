@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Transaction } from "@/lib/types";
+import type { Transaction, Account } from "@/lib/types";
 import { getCategoryByName } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,14 +15,19 @@ import { Badge } from "@/components/ui/badge";
 
 type TransactionListProps = {
   transactions: Transaction[];
+  accounts: Account[];
 };
 
-export function TransactionList({ transactions }: TransactionListProps) {
+export function TransactionList({ transactions, accounts }: TransactionListProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value);
+  
+  const getAccountName = (accountId: string) => {
+    return accounts.find(acc => acc.id === accountId)?.name || 'Conta desconhecida';
+  }
 
   return (
     <div className="w-full">
@@ -31,6 +36,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
           <TableRow>
             <TableHead className="hidden sm:table-cell">Categoria</TableHead>
             <TableHead>Descrição</TableHead>
+            <TableHead className="hidden md:table-cell">Conta</TableHead>
             <TableHead className="hidden md:table-cell">Data</TableHead>
             <TableHead className="text-right">Valor</TableHead>
           </TableRow>
@@ -53,11 +59,17 @@ export function TransactionList({ transactions }: TransactionListProps) {
                   <div className="text-sm text-muted-foreground sm:hidden">
                     {category?.name}
                   </div>
+                   <div className="text-sm text-muted-foreground md:hidden">
+                    {getAccountName(transaction.accountId)} - {format(new Date(transaction.date), "dd/MM/yyyy")}
+                  </div>
                   {transaction.totalInstallments && transaction.totalInstallments > 1 && (
                     <div className="text-xs text-muted-foreground">
                         Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
                     </div>
                   )}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {getAccountName(transaction.accountId)}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {format(new Date(transaction.date), "dd/MM/yyyy", { locale: ptBR })}

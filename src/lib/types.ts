@@ -7,6 +7,7 @@ export type Transaction = {
   date: string; // Should be ISO string
   description: string;
   category: string;
+  accountId: string;
   creditCardId?: string;
   installmentNumber?: number;
   totalInstallments?: number;
@@ -27,6 +28,12 @@ export type CreditCard = {
   closingDate: number; // day of month
   dueDate: number; // day of month
   brand: 'visa' | 'mastercard' | 'amex' | 'other';
+};
+
+export type Account = {
+  id: string;
+  name: string;
+  balance: number;
 };
 
 export type Budget = {

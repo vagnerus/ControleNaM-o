@@ -14,9 +14,10 @@ import {
   Landmark,
   Plane,
   Receipt,
+  Wallet,
 } from 'lucide-react';
-import type { Category, Transaction, CreditCard } from '@/lib/types';
-import { addDoc, collection, Firestore, doc, deleteDoc } from 'firebase/firestore';
+import type { Category, Transaction, CreditCard, Account } from '@/lib/types';
+import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { addMonths } from 'date-fns';
@@ -54,44 +55,66 @@ export const getCategories = (type?: 'income' | 'expense'): Category[] => {
 export const addTransaction = (
   firestore: Firestore,
   userId: string,
-  transaction: Omit<Transaction, 'id'> & { totalInstallments?: number }
+  transactionData: Omit<Transaction, 'id'> & { totalInstallments?: number }
 ) => {
   if (!userId) {
     throw new Error('User must be authenticated to add a transaction.');
   }
+  
+  const { amount, type, accountId, creditCardId, totalInstallments, ...rest } = transactionData;
   const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
   
-  if (transaction.totalInstallments && transaction.totalInstallments > 1) {
-    const installmentAmount = transaction.amount / transaction.totalInstallments;
-    for (let i = 0; i < transaction.totalInstallments; i++) {
-        const installmentDate = addMonths(new Date(transaction.date), i);
+  if (totalInstallments && totalInstallments > 1 && creditCardId) {
+    const installmentAmount = amount / totalInstallments;
+    for (let i = 0; i < totalInstallments; i++) {
+        const installmentDate = addMonths(new Date(rest.date), i);
         const installmentTransaction = {
-            ...transaction,
+            ...rest,
             amount: installmentAmount,
+            type,
+            accountId,
+            creditCardId,
             date: installmentDate.toISOString(),
             installmentNumber: i + 1,
+            totalInstallments,
         };
-
-        addDoc(transactionsCollection, installmentTransaction)
-            .catch(error => {
-                console.error("Error adding installment transaction: ", error);
-                // We can decide how to handle partial failures. 
-                // Maybe emit one error for the whole batch.
-            });
+        // We don't update account balance for credit card transactions
+        addDoc(transactionsCollection, installmentTransaction).catch(error => {
+          console.error("Error adding installment transaction: ", error);
+        });
     }
   } else {
     // Non-installment or single installment transaction
-    addDoc(transactionsCollection, transaction)
-      .catch(error => {
+    const newTransaction = {
+      ...rest,
+      amount,
+      type,
+      accountId,
+      date: rest.date,
+      totalInstallments: 1,
+      installmentNumber: 1,
+    };
+    
+    runTransaction(firestore, async (tx) => {
+        // Create the transaction document
+        tx.set(doc(transactionsCollection), newTransaction);
+
+        // Update account balance only if it's not a credit card transaction
+        if (!creditCardId) {
+            const accountRef = doc(firestore, 'users', userId, 'accounts', accountId);
+            const balanceChange = type === 'income' ? amount : -amount;
+            tx.update(accountRef, { balance: increment(balanceChange) });
+        }
+    }).catch(error => {
         errorEmitter.emit(
           'permission-error',
           new FirestorePermissionError({
             path: transactionsCollection.path,
             operation: 'create',
-            requestResourceData: transaction,
+            requestResourceData: newTransaction,
           })
         );
-      });
+    });
   }
 };
 
@@ -145,3 +168,52 @@ export const deleteCard = (
       );
     });
 }
+
+export const addAccount = (
+  firestore: Firestore,
+  userId: string,
+  accountData: Omit<Account, 'id'>
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated to add an account.');
+  }
+  const accountsCollection = collection(firestore, 'users', userId, 'accounts');
+  
+  addDoc(accountsCollection, accountData)
+    .catch(error => {
+      console.error("Error adding account: ", error);
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: accountsCollection.path,
+          operation: 'create',
+          requestResourceData: accountData,
+        })
+      );
+    });
+};
+
+export const deleteAccount = (
+  firestore: Firestore,
+  userId: string,
+  accountId: string
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated to delete an account.');
+  }
+  // Note: This does not handle transactions associated with the account.
+  // In a real app, you might want to re-assign them or delete them.
+  const accountDoc = doc(firestore, 'users', userId, 'accounts', accountId);
+  
+  deleteDoc(accountDoc)
+    .catch(error => {
+      console.error("Error deleting account: ", error);
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: accountDoc.path,
+          operation: 'delete',
+        })
+      );
+    });
+};

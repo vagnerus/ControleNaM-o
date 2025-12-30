@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
-import type { Transaction, Budget, FinancialGoal } from '@/lib/types';
+import type { Transaction, Budget, FinancialGoal, Account } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -17,8 +17,9 @@ import { BudgetCard } from "@/components/budgets/BudgetCard";
 import { GoalCard } from "@/components/goals/GoalCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2 } from "lucide-react";
+import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2, Landmark } from "lucide-react";
 import { CategoryChart } from "@/components/dashboard/CategoryChart";
+import { AccountCard } from '@/components/accounts/AccountCard';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -32,6 +33,10 @@ export default function DashboardPage() {
   const recentTransactionsQuery = useMemoFirebase(() =>
     user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc'), limit(5)) : null
   , [firestore, user]);
+  
+  const accountsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'accounts') : null
+  , [firestore, user]);
 
   const budgetsQuery = useMemoFirebase(() =>
     user ? collection(firestore, 'users', user.uid, 'budgets') : null
@@ -44,6 +49,7 @@ export default function DashboardPage() {
   // Fetch data using hooks
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: recentTransactions, isLoading: recentTransactionsLoading } = useCollection<Transaction>(recentTransactionsQuery);
+  const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
   const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsQuery);
   const { data: goals, isLoading: goalsLoading } = useCollection<FinancialGoal>(goalsQuery);
 
@@ -61,17 +67,18 @@ export default function DashboardPage() {
 
     const income = currentMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const balance = income - expenses;
+    
+    const totalBalance = (accounts || []).reduce((sum, acc) => sum + acc.balance, 0);
 
     const spending: Record<string, number> = {};
     currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
         spending[t.category] = (spending[t.category] || 0) + t.amount;
     });
 
-    return { summary: { income, expenses, balance }, spendingByCategory: spending };
-  }, [transactions]);
+    return { summary: { income, expenses, balance: totalBalance }, spendingByCategory: spending };
+  }, [transactions, accounts]);
   
-  const isLoading = transactionsLoading || recentTransactionsLoading || budgetsLoading || goalsLoading;
+  const isLoading = transactionsLoading || recentTransactionsLoading || budgetsLoading || goalsLoading || accountsLoading;
 
   if (isLoading) {
     return (
@@ -94,17 +101,17 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 sm:p-6 lg:p-8 grid gap-8">
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SummaryCard
-            title="Receitas"
+            title="Receitas do Mês"
             value={summary.income}
             icon={<TrendingUp className="text-emerald-500" />}
           />
           <SummaryCard
-            title="Despesas"
+            title="Despesas do Mês"
             value={summary.expenses}
             icon={<TrendingDown className="text-red-500" />}
           />
           <SummaryCard
-            title="Saldo"
+            title="Saldo Total em Contas"
             value={summary.balance}
             icon={<Wallet />}
           />
@@ -128,18 +135,18 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Orçamentos</CardTitle>
-                  <CardDescription>Seu progresso de gastos este mês.</CardDescription>
+                  <CardTitle>Contas</CardTitle>
+                  <CardDescription>Seus saldos atuais.</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/budgets">
-                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                  <Link href="/accounts">
+                    Ver todas <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                {budgets?.slice(0, 2).map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+                {accounts?.slice(0, 2).map((account) => (
+                  <AccountCard key={account.id} account={account} isCompact />
                 ))}
               </CardContent>
             </Card>
@@ -147,7 +154,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -163,7 +170,27 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <TransactionList transactions={recentTransactions || []} />
+                <TransactionList transactions={recentTransactions || []} accounts={accounts || []} />
+              </CardContent>
+            </Card>
+          </div>
+           <div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Orçamentos</CardTitle>
+                  <CardDescription>Seu progresso de gastos este mês.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/budgets">
+                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {budgets?.slice(0, 2).map((budget) => (
+                  <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+                ))}
               </CardContent>
             </Card>
           </div>
