@@ -33,12 +33,13 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { MagicInput } from "../common/MagicInput";
+import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -56,6 +57,16 @@ const formSchema = z.object({
     required_error: "A conta é obrigatória.",
   }),
   creditCardId: z.string().optional(),
+  isInstallment: z.boolean().default(false),
+  totalInstallments: z.coerce.number().optional(),
+}).refine(data => {
+    if (data.isInstallment && (!data.totalInstallments || data.totalInstallments < 2)) {
+        return false;
+    }
+    return true;
+}, {
+    message: "O número de parcelas deve ser 2 ou mais.",
+    path: ["totalInstallments"],
 });
 
 type AddTransactionFormProps = {
@@ -67,6 +78,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+  const [isInstallment, setIsInstallment] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,11 +87,15 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       amount: 0,
       description: "",
       date: new Date(),
-      creditCardId: ""
+      creditCardId: "",
+      isInstallment: false,
+      totalInstallments: 2,
     },
   });
 
   const transactionType = form.watch("type");
+  const useCreditCard = form.watch("creditCardId");
+  const isInstallmentPurchase = form.watch("isInstallment");
 
   // Fetch user's custom categories
   const categoriesQuery = useMemoFirebase(() => 
@@ -105,6 +121,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         date: new Date(transaction.date),
         creditCardId: transaction.creditCardId || ""
       });
+      setIsInstallment(!!transaction.isInstallment);
     }
   }, [transaction, form]);
 
@@ -117,8 +134,15 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     // Reset credit card if type changes to income
     if (transactionType === 'income') {
         form.setValue('creditCardId', undefined);
+        form.setValue('isInstallment', false);
     }
   }, [transactionType, form]);
+
+  useEffect(() => {
+      if (!useCreditCard) {
+          form.setValue('isInstallment', false);
+      }
+  }, [useCreditCard, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -132,6 +156,10 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
      if (values.creditCardId && values.type === 'income') {
       form.setError('creditCardId', { message: 'Receitas não podem ser associadas a um cartão de crédito.'});
       return;
+    }
+    if (values.isInstallment && !values.creditCardId) {
+        form.setError('isInstallment', { message: 'Compras parceladas devem ser associadas a um cartão de crédito.'});
+        return;
     }
 
     try {
@@ -253,7 +281,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(value === 'null' ? undefined : value)} value={field.value}>
+                    <Select onValueChange={(value) => field.onChange(value === 'null' ? undefined : value)} value={field.value || 'null'}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Nenhum" />
@@ -272,6 +300,44 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                     </FormItem>
                 )}
             />
+        )}
+        
+        {useCreditCard && transactionType === 'expense' && (
+            <div className="space-y-4 rounded-md border p-4">
+                <FormField
+                    control={form.control}
+                    name="isInstallment"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                                <FormLabel>Compra Parcelada?</FormLabel>
+                                <p className="text-xs text-muted-foreground">Marque se esta é uma compra com múltiplas parcelas.</p>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+                {isInstallmentPurchase && (
+                    <FormField
+                        control={form.control}
+                        name="totalInstallments"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Número de Parcelas</FormLabel>
+                                <FormControl>
+                                    <Input type="number" min="2" placeholder="Ex: 12" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+            </div>
         )}
 
 

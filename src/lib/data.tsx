@@ -3,11 +3,12 @@
 'use client';
 
 import React from 'react';
-import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Tag, RecurringTransaction } from '@/lib/types';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Tag, RecurringTransaction, Installment } from '@/lib/types';
 import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import * as lucide from "lucide-react"
+import { addMonths, format } from 'date-fns';
 
 export type BankIcon = {
   id: string;
@@ -77,23 +78,48 @@ export const saveTransaction = (
     throw new Error('User must be authenticated.');
   }
 
-  // Do not update account balance if transaction is on a credit card
-  if (transactionData.creditCardId) {
-      const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
-      const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
-      
-      const operation = transactionId ? updateDoc(newDocRef, transactionData) : addDoc(transactionsCollection, transactionData);
+  // If it's a new, installment-based purchase, create installments
+  if (transactionData.isInstallment && transactionData.totalInstallments && transactionData.creditCardId && !transactionId) {
+    return runTransaction(firestore, async (tx) => {
+      const purchaseAmount = transactionData.amount;
+      const installmentAmount = parseFloat((purchaseAmount / transactionData.totalInstallments!).toFixed(2));
+      const purchaseDate = new Date(transactionData.date);
 
-      return operation.catch(error => {
-          const path = transactionId ? newDocRef.path : transactionsCollection.path;
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: path,
-              operation: transactionId ? 'update' : 'create',
-              requestResourceData: transactionData,
-          }));
+      // 1. Save the original purchase transaction (for record keeping)
+      const purchaseTransactionRef = doc(collection(firestore, 'users', userId, 'transactions'));
+      tx.set(purchaseTransactionRef, {
+        ...transactionData,
+        amount: purchaseAmount,
+        description: `${transactionData.description} (Compra Original)`,
+        isInstallment: true,
+        totalInstallments: transactionData.totalInstallments,
       });
+
+      // 2. Create individual installment transactions
+      for (let i = 1; i <= transactionData.totalInstallments!; i++) {
+        const installmentDate = addMonths(purchaseDate, i - 1);
+        const installmentRef = doc(collection(firestore, 'users', userId, 'transactions'));
+        tx.set(installmentRef, {
+          ...transactionData,
+          amount: installmentAmount,
+          date: installmentDate.toISOString(),
+          description: `${transactionData.description} (${i}/${transactionData.totalInstallments})`,
+          isInstallment: true,
+          totalInstallments: transactionData.totalInstallments,
+          originalPurchaseId: purchaseTransactionRef.id,
+        });
+      }
+    }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `users/${userId}/transactions`,
+            operation: 'create',
+            requestResourceData: transactionData,
+        }));
+    });
   }
 
+
+  // Logic for regular transactions or updating existing transactions
   return runTransaction(firestore, async (tx) => {
     const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
     const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
@@ -105,20 +131,24 @@ export const saveTransaction = (
             oldTransactionData = oldDoc.data() as Transaction;
         }
     }
+    
+    // Do not adjust balance for any credit card transactions
+    if (transactionData.creditCardId) {
+        tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
+        return;
+    }
 
-    // Revert old balance if it's an update
+    // Revert old balance if it's an update of a non-card transaction
     if (oldTransactionData && !oldTransactionData.creditCardId) {
         const oldAccountRef = doc(firestore, 'users', userId, 'accounts', oldTransactionData.accountId);
         const oldBalanceChange = oldTransactionData.type === 'income' ? -oldTransactionData.amount : oldTransactionData.amount;
         tx.update(oldAccountRef, { balance: increment(oldBalanceChange) });
     }
 
-    // Apply new balance change if it's not a credit card transaction
-    if (!transactionData.creditCardId) {
-        const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
-        const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
-        tx.update(newAccountRef, { balance: increment(newBalanceChange) });
-    }
+    // Apply new balance change if it's a non-card transaction
+    const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
+    const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+    tx.update(newAccountRef, { balance: increment(newBalanceChange) });
     
     tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
 

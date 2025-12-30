@@ -10,6 +10,8 @@ export type Transaction = {
   accountId: string;
   creditCardId?: string;
   tagIds?: string[];
+  isInstallment?: boolean; // Is this transaction an installment payment?
+  totalInstallments?: number; // Total number of installments for a purchase
 };
 
 export type Category = {
@@ -73,7 +75,7 @@ export type RecurringTransaction = {
 
 export type Installment = {
     id: string;
-    transactionId: string;
+    transactionId: string; // Original purchase transaction
     creditCardId: string;
     installmentNumber: number;
     totalInstallments: number;
