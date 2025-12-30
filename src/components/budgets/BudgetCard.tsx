@@ -1,3 +1,4 @@
+
 import { getIconComponent, deleteBudget } from "@/lib/data";
 import type { Budget, Transaction, Category } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
@@ -110,7 +111,7 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
           )}
           <div>
             <CardTitle>{budget.categoryName}</CardTitle>
-            <p className="text-sm text-muted-foreground">Orçamento Mensal</p>
+            <p className="text-sm text-muted-foreground">Planejamento Mensal</p>
           </div>
         </div>
         <AlertDialog>
@@ -138,7 +139,7 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
                     <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                     <AlertDialogDescription>
                         Essa ação não pode ser desfeita. Isso excluirá permanentemente o
-                        seu orçamento para esta categoria.
+                        seu planejamento para esta categoria.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -158,7 +159,7 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
       <CardContent className="space-y-2">
         <div className="flex justify-between text-muted-foreground text-sm">
           <span>Gasto</span>
-          <span>Orçamento</span>
+          <span>Planejado</span>
         </div>
         <div className="flex justify-between items-baseline">
           <span className="text-2xl font-bold">

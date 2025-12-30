@@ -179,7 +179,7 @@ export default function DashboardPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Orçamentos</CardTitle>
+                  <CardTitle>Planejamento</CardTitle>
                   <CardDescription>Seu progresso de gastos este mês.</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" asChild>

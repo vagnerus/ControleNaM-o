@@ -77,7 +77,7 @@ export default function BudgetsPage() {
     if (isLoading) {
         return (
             <>
-                <Header title="Orçamentos" >
+                <Header title="Planejamento" >
                     <AddBudgetDialog />
                 </Header>
                 <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
@@ -89,7 +89,7 @@ export default function BudgetsPage() {
 
     return (
         <>
-            <Header title="Orçamentos">
+            <Header title="Planejamento">
                 <AddBudgetDialog />
             </Header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">

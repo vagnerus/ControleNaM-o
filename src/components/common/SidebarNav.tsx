@@ -10,20 +10,24 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboard,
-  Wallet,
-  ArrowRightLeft,
-  PieChart,
-  Target,
-  CreditCard,
-  Settings,
-  CircleHelp,
-  LogOut,
+  Home,
   Landmark,
-  Shapes,
+  ArrowRightLeft,
+  CreditCard,
+  ListChecks,
   BarChart,
+  Settings,
+  Target,
+  Bookmark,
+  Tags,
+  Calendar,
+  Activity,
+  FileUp,
+  FileDown,
+  LogOut
 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -42,16 +46,25 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
-const menuItems = [
-  { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
+const mainMenuItems = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/accounts", label: "Contas", icon: Landmark },
-  { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
-  { href: "/budgets", label: "Orçamentos", icon: PieChart },
-  { href: "/goals", label: "Objetivos", icon: Target },
+  { href: "/cards", label: "Cartões de crédito", icon: CreditCard },
+  { href: "/budgets", label: "Planejamento", icon: ListChecks },
   { href: "/reports", label: "Relatórios", icon: BarChart },
-  { href: "/categories", label: "Categorias", icon: Shapes },
 ];
+
+const secondaryMenuItems = [
+    { href: "/settings", label: "Configurações", icon: Settings },
+    { href: "/goals", label: "Objetivos", icon: Target },
+    { href: "/categories", label: "Categorias", icon: Bookmark },
+    { href: "/tags", label: "Tags", icon: Tags },
+    { href: "/calendar", label: "Calendário", icon: Calendar },
+    { href: "/performance", label: "Meu Desempenho", icon: Activity },
+    { href: "/import", label: "Importar transações", icon: FileUp },
+    { href: "/export", label: "Exportar transações", icon: FileDown },
+]
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -91,7 +104,7 @@ export function SidebarNav() {
       <SidebarHeader className="border-b border-sidebar-border p-3">
         <div className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <Wallet className="h-6 w-6" />
+            <Landmark className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
             <h2 className="font-semibold text-lg">ControleNaMão</h2>
@@ -103,7 +116,21 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map((item) => (
+          {mainMenuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+          <SidebarSeparator />
+           {secondaryMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton

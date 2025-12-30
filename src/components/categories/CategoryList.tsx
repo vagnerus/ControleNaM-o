@@ -59,7 +59,7 @@ export function CategoryList({ categories }: CategoryListProps) {
             toast({
                 variant: 'destructive',
                 title: 'Categoria em uso',
-                description: 'Esta categoria está sendo usada em transações ou orçamentos e não pode ser excluída.',
+                description: 'Esta categoria está sendo usada em transações ou planejamentos e não pode ser excluída.',
             });
             return;
         }
