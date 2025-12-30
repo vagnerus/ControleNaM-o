@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  signInWithRedirect,
 } from 'firebase/auth';
 
 export async function signUpWithEmail(auth: Auth, email: string, password: string) {
@@ -18,5 +19,7 @@ export async function signInWithEmail(auth: Auth, email: string, password: strin
 
 export async function signInWithGoogle(auth: Auth) {
   const provider = new GoogleAuthProvider();
-  return await signInWithPopup(auth, provider);
+  // Use signInWithRedirect for a better experience on mobile and to avoid popup blockers.
+  // The result is handled by onAuthStateChanged and getRedirectResult.
+  await signInWithRedirect(auth, provider);
 }

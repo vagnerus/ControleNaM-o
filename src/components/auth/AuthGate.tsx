@@ -1,34 +1,53 @@
 'use client';
 
-import { usePathname, redirect } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { getRedirectResult } from 'firebase/auth';
+import { useAuth } from '@/firebase';
 
 const AUTH_ROUTES = ['/login', '/signup'];
 const PUBLIC_ROUTES = [...AUTH_ROUTES]; 
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
   const { user, isUserLoading, userError } = useUser();
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait for user status to be determined
+    // This handles the redirect result from Google Sign-In
+    getRedirectResult(auth).catch((error) => {
+      // Handle or log errors from the redirect result if necessary
+      console.error("Error from redirect result:", error);
+    });
+  }, [auth]);
 
-    const isAuthRoute = AUTH_ROUTES.includes(pathname);
-    
-    if (user && isAuthRoute) {
-      // If user is logged in and tries to access login/signup, redirect to dashboard
-      redirect('/dashboard');
-    } else if (!user && !PUBLIC_ROUTES.includes(pathname)) {
-      // If user is not logged in and not on a public route, redirect to login
-      redirect('/login');
+  useEffect(() => {
+    if (isUserLoading) {
+        return; // Wait until the user's status is determined
     }
 
-  }, [user, isUserLoading, pathname]);
+    const isAuthRoute = AUTH_ROUTES.includes(pathname);
 
+    if (user) {
+      if (isAuthRoute) {
+        // If the user is logged in and on an auth route, redirect to the dashboard
+        router.replace('/dashboard');
+      }
+      // If the user is logged in and on a protected route, do nothing, let them stay.
+    } else {
+      if (!PUBLIC_ROUTES.includes(pathname)) {
+        // If the user is not logged in and not on a public route, redirect to login
+        router.replace('/login');
+      }
+    }
+  }, [user, isUserLoading, pathname, router]);
+
+  // While loading or if a non-logged-in user is on a protected path, show a loader.
+  // This prevents flashing the content of a protected page before redirection.
   if (isUserLoading || (!user && !PUBLIC_ROUTES.includes(pathname))) {
-    // Show a loading spinner while checking auth status or before redirecting
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -45,5 +64,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     )
   }
 
+  // If the logic above has passed, render the children.
   return <>{children}</>;
 }

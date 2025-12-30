@@ -39,15 +39,9 @@ export function SignupForm() {
   });
 
   const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle(auth);
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro no Cadastro',
-        description: 'Não foi possível fazer login com o Google. Tente novamente.',
-      });
-    }
+    // No try-catch needed here as errors will be handled globally
+    // or by the redirect result handler in AuthGate.
+    await signInWithGoogle(auth);
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
