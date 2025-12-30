@@ -199,6 +199,21 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
       }
+      
+      /**
+       * @description Controls access to user-specific reports.
+       * @path /users/{userId}/reports/{reportId}
+       * @allow A logged-in user (auth.uid='user123') can (create) their own report at `/users/user123/reports/rep456`.
+       * @deny A different user (auth.uid='user789') is denied from (get)ting a report at `/users/user123/reports/rep456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /reports/{reportId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
     }
   }
 }

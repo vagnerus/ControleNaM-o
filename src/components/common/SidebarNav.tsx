@@ -23,6 +23,7 @@ import {
   LogOut,
   Landmark,
   Shapes,
+  BarChart,
 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -43,11 +44,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const menuItems = [
   { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
-  { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
   { href: "/accounts", label: "Contas", icon: Landmark },
   { href: "/cards", label: "Cartões", icon: CreditCard },
+  { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
   { href: "/budgets", label: "Orçamentos", icon: PieChart },
   { href: "/goals", label: "Objetivos", icon: Target },
+  { href: "/reports", label: "Relatórios", icon: BarChart },
   { href: "/categories", label: "Categorias", icon: Shapes },
 ];
 
