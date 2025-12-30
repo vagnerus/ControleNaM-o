@@ -22,6 +22,7 @@ import {
   CircleHelp,
   LogOut,
   Landmark,
+  Shapes,
 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -47,6 +48,7 @@ const menuItems = [
   { href: "/cards", label: "Cartões", icon: CreditCard },
   { href: "/budgets", label: "Orçamentos", icon: PieChart },
   { href: "/goals", label: "Objetivos", icon: Target },
+  { href: "/categories", label: "Categorias", icon: Shapes },
 ];
 
 export function SidebarNav() {

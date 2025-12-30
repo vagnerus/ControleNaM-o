@@ -15,43 +15,64 @@ import {
   Plane,
   Receipt,
   Wallet,
+  LucideIcon,
+  Shapes,
+  Shirt,
+  Dog,
+  Gamepad2,
+  Book,
+  Bus,
+  Baby,
 } from 'lucide-react';
-import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal } from '@/lib/types';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Icon } from '@/lib/types';
 import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { addMonths } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
-
-// This file now contains the static definitions for categories,
-// but all transactional data functions will interact with Firestore.
-
-const STATIC_CATEGORIES: Category[] = [
-  { id: 'cat_1', name: 'Alimentação', icon: Utensils, type: 'expense' },
-  { id: 'cat_2', name: 'Transporte', icon: Car, type: 'expense' },
-  { id: 'cat_3', name: 'Moradia', icon: Home, type: 'expense' },
-  { id: 'cat_4', name: 'Supermercado', icon: ShoppingCart, type: 'expense' },
-  { id: 'cat_5', name: 'Saúde', icon: Heart, type: 'expense' },
-  { id: 'cat_6', name: 'Lazer', icon: Film, type: 'expense' },
-  { id: 'cat_7', name: 'Educação', icon: GraduationCap, type: 'expense' },
-  { id: 'cat_8', name: 'Viagem', icon: Plane, type: 'expense' },
-  { id: 'cat_9', name: 'Presentes', icon: Gift, type: 'expense' },
-  { id: 'cat_10', name: 'Outras Despesas', icon: Receipt, type: 'expense' },
-  { id: 'cat_11', name: 'Salário', icon: Briefcase, type: 'income' },
-  { id: 'cat_12', name: 'Investimentos', icon: PiggyBank, type: 'income' },
-  { id: 'cat_13', name: 'Outras Receitas', icon: Landmark, type: 'income' },
+export const ICONS: Icon[] = [
+  { id: 'cat_1', name: 'Alimentação', component: Utensils },
+  { id: 'cat_2', name: 'Transporte', component: Car },
+  { id: 'cat_3', name: 'Moradia', component: Home },
+  { id: 'cat_4', name: 'Supermercado', component: ShoppingCart },
+  { id: 'cat_5', name: 'Saúde', component: Heart },
+  { id: 'cat_6', name: 'Lazer', component: Film },
+  { id: 'cat_7', name: 'Educação', component: GraduationCap },
+  { id: 'cat_8', name: 'Viagem', component: Plane },
+  { id: 'cat_9', name: 'Presentes', component: Gift },
+  { id: 'cat_10', name: 'Outras Despesas', component: Receipt },
+  { id: 'cat_11', name: 'Salário', component: Briefcase },
+  { id: 'cat_12', name: 'Investimentos', component: PiggyBank },
+  { id: 'cat_13', name: 'Outras Receitas', component: Landmark },
+  { id: 'cat_14', name: 'Carteira', component: Wallet },
+  { id: 'cat_15', name: 'Formas', component: Shapes },
+  { id: 'cat_16', name: 'Roupas', component: Shirt },
+  { id: 'cat_17', name: 'Pet', component: Dog },
+  { id: 'cat_18', name: 'Jogos', component: Gamepad2 },
+  { id: 'cat_19', name: 'Livro', component: Book },
+  { id: 'cat_20', name: 'Ônibus', component: Bus },
+  { id: 'cat_21', name: 'Bebê', component: Baby },
 ];
 
-export const getCategoryByName = (name: string): Category | undefined => STATIC_CATEGORIES.find(c => c.name === name);
 
-export const getCategories = (type?: 'income' | 'expense'): Category[] => {
-    if (type) {
-        return STATIC_CATEGORIES.filter(c => c.type === type || c.type === 'all');
-    }
-    return STATIC_CATEGORIES;
+export const getIcon = (iconName: string): LucideIcon | undefined => {
+    return ICONS.find(i => i.name === iconName)?.component;
+}
+
+export const getIconComponent = (iconName: string) => {
+    const icon = ICONS.find(i => i.name === iconName || i.id === iconName);
+    return icon ? icon.component : Receipt; // Default icon
 };
 
+
+// This function is now mostly for providing icon details for a given category name
+export const getCategoryDetails = (name: string, categories: Category[]): Partial<Category> => {
+    const category = categories.find(c => c.name === name);
+    return {
+        icon: category?.icon,
+    };
+};
 
 export const saveTransaction = (
   firestore: Firestore,
@@ -317,4 +338,49 @@ export const deleteGoal = (firestore: Firestore, userId: string, goalId: string)
   deleteDoc(goalDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'delete' }));
   });
+};
+
+// Category Functions
+export const saveCategory = (firestore: Firestore, userId: string, categoryData: Omit<Category, 'id'>, categoryId?: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  
+  if (categoryId) {
+    // Update existing category
+    const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
+    updateDoc(categoryDoc, categoryData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryDoc.path, operation: 'update', requestResourceData: categoryData }));
+    });
+  } else {
+    // Add new category
+    const categoriesCollection = collection(firestore, 'users', userId, 'categories');
+    addDoc(categoriesCollection, categoryData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoriesCollection.path, operation: 'create', requestResourceData: categoryData }));
+    });
+  }
+};
+
+export const deleteCategory = (firestore: Firestore, userId: string, categoryId: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
+  deleteDoc(categoryDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryDoc.path, operation: 'delete' }));
+  });
+};
+
+export const isCategoryInUse = async (firestore: Firestore, userId: string, categoryId: string): Promise<boolean> => {
+    if (!userId) throw new Error("User must be authenticated.");
+
+    const transactionsQuery = query(collection(firestore, 'users', userId, 'transactions'), where('categoryId', '==', categoryId));
+    const transactionsSnap = await getDocs(transactionsQuery);
+    if (!transactionsSnap.empty) {
+        return true;
+    }
+
+    const budgetsQuery = query(collection(firestore, 'users', userId, 'budgets'), where('categoryId', '==', categoryId));
+    const budgetsSnap = await getDocs(budgetsQuery);
+    if (!budgetsSnap.empty) {
+        return true;
+    }
+
+    return false;
 };

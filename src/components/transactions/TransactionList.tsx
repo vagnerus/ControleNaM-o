@@ -6,8 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Transaction, Account } from "@/lib/types";
-import { getCategoryByName, deleteTransaction } from "@/lib/data";
+import type { Transaction, Account, Category } from "@/lib/types";
+import { deleteTransaction, getIconComponent } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -32,9 +32,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { AddTransactionDialog } from "./AddTransactionDialog";
 import { useState } from "react";
+import { collection, query } from "firebase/firestore";
 
 type TransactionListProps = {
   transactions: Transaction[];
@@ -47,6 +48,15 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
     const firestore = useFirestore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+    const categoriesQuery = useMemoFirebase(() =>
+        user ? query(collection(firestore, 'users', user.uid, 'categories')) : null
+    , [firestore, user]);
+    const { data: categories } = useCollection<Category>(categoriesQuery);
+
+    const getCategory = (categoryId: string) => {
+        return categories?.find(cat => cat.id === categoryId);
+    }
 
     const formatCurrency = (value: number) =>
         new Intl.NumberFormat("pt-BR", {
@@ -100,13 +110,14 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
         </TableHeader>
         <TableBody>
           {transactions.map((transaction) => {
-            const category = getCategoryByName(transaction.category);
+            const category = getCategory(transaction.categoryId);
+            const Icon = category ? getIconComponent(category.icon) : null;
             return (
               <TableRow key={transaction.id}>
                 <TableCell className="hidden sm:table-cell">
-                  {category && (
+                  {category && Icon && (
                     <Badge variant="outline" className="flex w-fit items-center gap-2">
-                        {category.icon && <category.icon className="h-4 w-4" />}
+                        <Icon className="h-4 w-4" />
                         {category.name}
                     </Badge>
                   )}

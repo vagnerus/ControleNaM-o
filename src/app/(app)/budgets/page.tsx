@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import type { Budget, FinancialGoal, Transaction } from "@/lib/types";
+import type { Budget, FinancialGoal, Transaction, Category } from "@/lib/types";
 
 import { Header } from "@/components/common/Header";
 import { BudgetCard } from "@/components/budgets/BudgetCard";
@@ -29,10 +30,15 @@ export default function BudgetsPage() {
         user ? query(collection(firestore, 'users', user.uid, 'transactions')) : null
     , [firestore, user]);
 
+    const categoriesQuery = useMemoFirebase(() =>
+        user ? query(collection(firestore, 'users', user.uid, 'categories')) : null
+    , [firestore, user]);
+
     // Data fetching
     const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsQuery);
     const { data: goals, isLoading: goalsLoading } = useCollection<FinancialGoal>(goalsQuery);
     const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
+    const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
     const { summary, spendingByCategory } = useMemo(() => {
         if (!transactions) return { summary: { income: 0, expenses: 0, balance: 0 }, spendingByCategory: {} };
@@ -50,11 +56,14 @@ export default function BudgetsPage() {
 
         const spending: Record<string, number> = {};
         currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
-            spending[t.category] = (spending[t.category] || 0) + t.amount;
+            const category = categories?.find(c => c.id === t.categoryId);
+            if (category) {
+                 spending[category.name] = (spending[category.name] || 0) + t.amount;
+            }
         });
 
         return { summary: { income }, spendingByCategory: spending };
-    }, [transactions]);
+    }, [transactions, categories]);
     
     const budgetDataForAI = {
         budgets: budgets || [],
@@ -63,7 +72,7 @@ export default function BudgetsPage() {
         spending: spendingByCategory,
     };
     
-    const isLoading = budgetsLoading || goalsLoading || transactionsLoading;
+    const isLoading = budgetsLoading || goalsLoading || transactionsLoading || categoriesLoading;
 
     if (isLoading) {
         return (

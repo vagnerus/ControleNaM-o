@@ -6,7 +6,7 @@ export type Transaction = {
   amount: number;
   date: string; // Should be ISO string
   description: string;
-  category: string;
+  categoryId: string;
   accountId: string;
   creditCardId?: string;
   installmentId?: string; // ID to group installments
@@ -17,8 +17,8 @@ export type Transaction = {
 export type Category = {
   id: string;
   name: string;
-  icon: LucideIcon;
-  type: 'income' | 'expense' | 'all';
+  icon: string; // Lucide icon name as string
+  type: 'income' | 'expense';
 };
 
 export type CreditCard = {
@@ -39,7 +39,8 @@ export type Account = {
 
 export type Budget = {
   id: string;
-  category: string;
+  categoryId: string;
+  categoryName?: string; // Denormalized for display
   amount: number;
 };
 
@@ -50,4 +51,11 @@ export type FinancialGoal = {
   currentAmount: number;
   monthlySaving: number;
   imageId: string;
+};
+
+// Represents an icon that can be selected for a category
+export type Icon = {
+  id: string;
+  name: string;
+  component: LucideIcon;
 };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { saveTransaction, getCategories } from "@/lib/data";
+import { saveTransaction, getIconComponent } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -37,7 +38,7 @@ import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { Checkbox } from "../ui/checkbox";
-import { collection } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -48,7 +49,7 @@ const formSchema = z.object({
   date: z.date({
     required_error: "A data é obrigatória.",
   }),
-  category: z.string({
+  categoryId: z.string({
     required_error: "A categoria é obrigatória.",
   }),
   accountId: z.string({
@@ -66,19 +67,8 @@ type AddTransactionFormProps = {
 
 export function AddTransactionForm({ onFinished, transaction }: AddTransactionFormProps) {
   const { toast } = useToast();
-  const [categories, setCategories] = useState<Category[]>([]);
   const { user } = useUser();
   const firestore = useFirestore();
-
-  const cardsQuery = useMemoFirebase(() => 
-    user ? collection(firestore, 'users', user.uid, 'creditCards') : null
-  , [firestore, user]);
-  const { data: cards } = useCollection<CreditCard>(cardsQuery);
-  
-  const accountsQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'accounts') : null
-  , [firestore, user]);
-  const { data: accounts } = useCollection<Account>(accountsQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -89,6 +79,25 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       isInstallment: false,
     },
   });
+
+  const transactionType = form.watch("type");
+  const isInstallment = form.watch("isInstallment");
+
+  // Fetch user's custom categories
+  const categoriesQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', transactionType)) : null
+  , [firestore, user, transactionType]);
+  const { data: categories } = useCollection<Category>(categoriesQuery);
+
+  const cardsQuery = useMemoFirebase(() => 
+    user ? collection(firestore, 'users', user.uid, 'creditCards') : null
+  , [firestore, user]);
+  const { data: cards } = useCollection<CreditCard>(cardsQuery);
+  
+  const accountsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'accounts') : null
+  , [firestore, user]);
+  const { data: accounts } = useCollection<Account>(accountsQuery);
 
   useEffect(() => {
     if (transaction) {
@@ -101,14 +110,9 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   }, [transaction, form]);
 
 
-  const transactionType = form.watch("type");
-  const isInstallment = form.watch("isInstallment");
-
   useEffect(() => {
-    const fetchedCategories = getCategories(transactionType);
-    setCategories(fetchedCategories);
     if (form.getValues('type') !== transactionType) {
-        form.setValue("category", "");
+        form.setValue("categoryId", "");
     }
   }, [transactionType, form]);
 
@@ -145,7 +149,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
 
     try {
         saveTransaction(firestore, user.uid, { 
-            ...values, 
+            ...values,
             date: values.date.toISOString(),
             totalInstallments: values.isInstallment ? values.totalInstallments : 1,
         }, transaction?.id);
@@ -232,7 +236,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         />
         <FormField
           control={form.control}
-          name="category"
+          name="categoryId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria</FormLabel>
@@ -243,14 +247,17 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.name}>
-                      <div className="flex items-center gap-2">
-                        {cat.icon && <cat.icon className="h-4 w-4" />}
-                        {cat.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {categories?.map((cat) => {
+                    const Icon = getIconComponent(cat.icon);
+                    return (
+                        <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            {cat.name}
+                        </div>
+                        </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />

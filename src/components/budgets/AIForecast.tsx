@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,7 +29,9 @@ export function AIForecast({ data }: AIForecastProps) {
     setForecast("");
 
     const budgetByCategory = data.budgets.reduce((acc, budget) => {
-      acc[budget.category] = budget.amount;
+      if (budget.categoryName) {
+        acc[budget.categoryName] = budget.amount;
+      }
       return acc;
     }, {} as Record<string, number>);
 

@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import type { Transaction, Account } from '@/lib/types';
+import type { Transaction, Account, Category } from '@/lib/types';
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { Header } from "@/components/common/Header";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
@@ -41,7 +42,7 @@ export default function TransactionsPage() {
 
   const safeTransactions = transactions || [];
   const safeAccounts = accounts || [];
-
+  
   return (
     <>
       <Header title="Transações">

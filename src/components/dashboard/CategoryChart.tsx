@@ -1,8 +1,9 @@
+
 "use client"
 
 import * as React from "react"
 import { Pie, PieChart, Cell } from "recharts"
-import { getCategoryByName } from "@/lib/data"
+import { getIconComponent } from "@/lib/data"
 import {
   ChartContainer,
   ChartTooltip,
@@ -12,31 +13,48 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { useMemo } from "react"
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
+import { collection } from "firebase/firestore"
+import type { Category } from "@/lib/types"
 
 type CategoryChartProps = {
     data: Record<string, number>
 }
 
 export function CategoryChart({ data }: CategoryChartProps) {
-  const { chartData, chartConfig } = useMemo(() => {
-    const chartData = Object.entries(data).map(([category, amount]) => ({
-      category,
-      amount,
-      fill: `hsl(var(--chart-${Object.keys(data).indexOf(category) + 1}))`,
-    }));
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-    const chartConfig = chartData.reduce((acc, { category, fill }) => {
-      const categoryInfo = getCategoryByName(category);
-      acc[category] = {
-        label: category,
+  const categoriesQuery = useMemoFirebase(() => 
+    user ? collection(firestore, 'users', user.uid, 'categories') : null
+  , [firestore, user]);
+  const { data: categories } = useCollection<Category>(categoriesQuery);
+
+  const { chartData, chartConfig } = useMemo(() => {
+    if (!categories) return { chartData: [], chartConfig: {} };
+
+    const chartData = Object.entries(data).map(([categoryId, amount]) => {
+      const category = categories.find(c => c.id === categoryId);
+      return {
+        id: categoryId,
+        name: category?.name || 'Desconhecido',
+        amount,
+        icon: category?.icon,
+        fill: `hsl(var(--chart-${(categories.findIndex(c => c.id === categoryId) % 5) + 1}))`,
+      };
+    });
+
+    const chartConfig = chartData.reduce((acc, { name, fill, icon }) => {
+      acc[name] = {
+        label: name,
         color: fill,
-        icon: categoryInfo?.icon,
+        icon: icon ? getIconComponent(icon) : undefined,
       };
       return acc;
     }, {} as ChartConfig);
 
     return { chartData, chartConfig };
-  }, [data]);
+  }, [data, categories]);
   
   const totalAmount = useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.amount, 0)
@@ -59,12 +77,12 @@ export function CategoryChart({ data }: CategoryChartProps) {
       <PieChart>
         <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent hideLabel />}
+            content={<ChartTooltipContent hideLabel nameKey="name" />}
         />
         <Pie
           data={chartData}
           dataKey="amount"
-          nameKey="category"
+          nameKey="name"
           innerRadius={60}
           strokeWidth={5}
         >
@@ -73,7 +91,7 @@ export function CategoryChart({ data }: CategoryChartProps) {
             ))}
         </Pie>
          <ChartLegend
-            content={<ChartLegendContent nameKey="category" />}
+            content={<ChartLegendContent nameKey="name" />}
             className="-translate-y-[2rem] flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
         />
       </PieChart>

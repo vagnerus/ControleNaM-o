@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, orderBy } from 'firebase/firestore';
-import type { Transaction, Budget, FinancialGoal, Account } from '@/lib/types';
+import type { Transaction, Budget, FinancialGoal, Account, Category } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -72,7 +73,7 @@ export default function DashboardPage() {
 
     const spending: Record<string, number> = {};
     currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
-        spending[t.category] = (spending[t.category] || 0) + t.amount;
+        spending[t.categoryId] = (spending[t.categoryId] || 0) + t.amount;
     });
 
     return { summary: { income, expenses, balance: totalBalance }, spendingByCategory: spending };

@@ -1,5 +1,5 @@
-import { getCategoryByName, deleteBudget } from "@/lib/data";
-import type { Budget, Transaction } from "@/lib/types";
+import { getIconComponent, deleteBudget } from "@/lib/data";
+import type { Budget, Transaction, Category } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -23,9 +23,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "../ui/button";
-import { useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AddBudgetDialog } from "./AddBudgetDialog";
+import { collection } from "firebase/firestore";
 
 type BudgetCardProps = {
   budget: Budget;
@@ -39,7 +40,12 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const category = getCategoryByName(budget.category);
+  const categoriesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
+  const { data: categories } = useCollection<Category>(categoriesQuery);
+  
+  const category = useMemo(() => {
+    return categories?.find(c => c.id === budget.categoryId);
+  }, [categories, budget.categoryId]);
 
   const spent = useMemo(() => {
     const today = new Date();
@@ -48,13 +54,13 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
     
     return transactions
         .filter(t => 
-            t.category === budget.category && 
+            t.categoryId === budget.categoryId && 
             t.type === 'expense' &&
             new Date(t.date).getMonth() === currentMonth &&
             new Date(t.date).getFullYear() === currentYear
         )
         .reduce((sum, t) => sum + t.amount, 0);
-  }, [transactions, budget.category]);
+  }, [transactions, budget.categoryId]);
   
   const percentage = (spent / budget.amount) * 100;
 
@@ -75,15 +81,16 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
     deleteBudget(firestore, user.uid, budget.id);
     toast({ title: 'Sucesso', description: 'Orçamento removido.' });
   };
-
+  
+  const Icon = category ? getIconComponent(category.icon) : null;
 
   if (isCompact) {
     return (
         <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-2 font-medium">
-                    {category?.icon && <category.icon className="h-4 w-4" />}
-                    <span>{budget.category}</span>
+                    {Icon && <Icon className="h-4 w-4" />}
+                    <span>{budget.categoryName}</span>
                 </div>
                 <span className="text-muted-foreground">{formatCurrency(spent)}</span>
             </div>
@@ -96,13 +103,13 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
     <Card>
       <CardHeader className="flex-row items-start justify-between">
         <div className="flex items-center gap-3">
-          {category?.icon && (
+          {Icon && (
             <div className="p-3 rounded-lg bg-primary/10 text-primary">
-                <category.icon className="h-6 w-6" />
+                <Icon className="h-6 w-6" />
             </div>
           )}
           <div>
-            <CardTitle>{budget.category}</CardTitle>
+            <CardTitle>{budget.categoryName}</CardTitle>
             <p className="text-sm text-muted-foreground">Orçamento Mensal</p>
           </div>
         </div>
