@@ -34,7 +34,7 @@ export function AddCardDialog({ open: controlledOpen, onOpenChange: setControlle
   if (children) {
      return (
         <Dialog open={open} onOpenChange={setOpen}>
-            {children}
+            {/* The trigger is now external to this component */}
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                 <DialogTitle>{title}</DialogTitle>

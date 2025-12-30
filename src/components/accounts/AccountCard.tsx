@@ -57,59 +57,60 @@ export function AccountCard({ account }: AccountCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-primary/10 text-primary">
-                <BankIcon className="h-6 w-6" />
-            </div>
-            <div>
-                <CardTitle>{account.name}</CardTitle>
-                <CardDescription>Saldo disponível</CardDescription>
-            </div>
-        </div>
-        <AddAccountDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} account={account}>
-          <AlertDialog>
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                      </DropdownMenuItem>
-                      <AlertDialogTrigger asChild>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                          </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                  </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          Essa ação não pode ser desfeita. Isso excluirá permanentemente a
-                          sua conta. Transações associadas não serão excluídas.
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                          Excluir
-                      </AlertDialogAction>
-                  </AlertDialogFooter>
-              </AlertDialogContent>
-          </AlertDialog>
-        </AddAccountDialog>
-      </CardHeader>
-      <CardContent>
-        <p className={cn("text-3xl font-bold", account.balance < 0 && "text-destructive")}>{formatCurrency(account.balance)}</p>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+              <div className="p-3 rounded-lg bg-primary/10 text-primary">
+                  <BankIcon className="h-6 w-6" />
+              </div>
+              <div>
+                  <CardTitle>{account.name}</CardTitle>
+                  <CardDescription>Saldo disponível</CardDescription>
+              </div>
+          </div>
+            <AlertDialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                        </DropdownMenuItem>
+                        <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente a
+                            sua conta. Transações associadas não serão excluídas.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Excluir
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </CardHeader>
+        <CardContent>
+          <p className={cn("text-3xl font-bold", account.balance < 0 && "text-destructive")}>{formatCurrency(account.balance)}</p>
+        </CardContent>
+      </Card>
+      <AddAccountDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} account={account} />
+    </>
   );
 }
