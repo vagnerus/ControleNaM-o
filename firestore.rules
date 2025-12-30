@@ -142,6 +142,20 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
 
       /**
+       * @description A user can manage their own bank accounts.
+       * @path /users/{userId}/accounts/{accountId}
+       * @allow (get) User `abc` reading an account document from their own subcollection.
+       * @deny (update) User `abc` trying to update an account for user `xyz`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /accounts/{accountId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
        * @description A user can manage their own transactions.
        * @path /users/{userId}/transactions/{transactionId}
        * @allow (create) User `abc` creating a transaction document in their own subcollection.
