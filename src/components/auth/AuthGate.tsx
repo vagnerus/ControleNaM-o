@@ -1,11 +1,10 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useAuth } from '@/firebase';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getRedirectResult } from 'firebase/auth';
-import { useAuth } from '@/firebase';
 
 const AUTH_ROUTES = ['/login', '/signup'];
 const PUBLIC_ROUTES = [...AUTH_ROUTES]; 
