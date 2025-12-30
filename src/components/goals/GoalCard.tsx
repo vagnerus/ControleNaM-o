@@ -57,16 +57,16 @@ export function GoalCard({ goal }: GoalCardProps) {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col overflow-hidden">
       <CardHeader className="p-0">
         <div className="relative">
             {image && (
-                <div className="relative aspect-[3/2] w-full">
+                <div className="relative aspect-[16/9] w-full">
                     <Image
                     src={image.imageUrl}
                     alt={image.description}
                     fill
-                    className="object-cover rounded-t-lg"
+                    className="object-cover"
                     data-ai-hint={image.imageHint}
                     />
                 </div>
@@ -75,7 +75,7 @@ export function GoalCard({ goal }: GoalCardProps) {
                  <AlertDialog>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full">
+                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-black/30 hover:bg-black/50 border-none text-white">
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>

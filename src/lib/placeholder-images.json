@@ -2,21 +2,51 @@
   "placeholderImages": [
     {
       "id": "goal-car",
-      "description": "A shiny red sports car",
-      "imageUrl": "https://images.unsplash.com/photo-1580446623001-3abf670c5c55?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxyZWQlMjBjYXJ8ZW58MHx8fHwxNzY3MDY2NzUwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "red car"
+      "description": "Comprar um Carro",
+      "imageUrl": "https://images.unsplash.com/photo-1541443131876-44b371343bEC?q=80&w=600&h=400&fit=crop",
+      "imageHint": "modern car"
     },
     {
       "id": "goal-house",
-      "description": "A modern house with a garden",
-      "imageUrl": "https://images.unsplash.com/photo-1613977257363-707ba9348227?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtb2Rlcm4lMjBob3VzZXxlbnwwfHx8fDE3NjcxMDE2MTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "Comprar uma Casa",
+      "imageUrl": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=600&h=400&fit=crop",
       "imageHint": "modern house"
     },
     {
       "id": "goal-travel",
-      "description": "A tropical beach with palm trees",
-      "imageUrl": "https://images.unsplash.com/photo-1571043281665-9debfed10719?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx0cm9waWNhbCUyMGJlYWNofGVufDB8fHx8MTc2NzA0NTEwMXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "tropical beach"
+      "description": "Viagem dos Sonhos",
+      "imageUrl": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=600&h=400&fit=crop",
+      "imageHint": "travel destination"
+    },
+    {
+      "id": "goal-education",
+      "description": "Pagar a Faculdade",
+      "imageUrl": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=600&h=400&fit=crop",
+      "imageHint": "graduation cap"
+    },
+    {
+      "id": "goal-emergency-fund",
+      "description": "Reserva de Emergência",
+      "imageUrl": "https://images.unsplash.com/photo-1561414927-6d86591d0c4f?q=80&w=600&h=400&fit=crop",
+      "imageHint": "piggy bank"
+    },
+    {
+      "id": "goal-wedding",
+      "description": "Casamento",
+      "imageUrl": "https://images.unsplash.com/photo-1597159292333-113c248a37e7?q=80&w=600&h=400&fit=crop",
+      "imageHint": "wedding rings"
+    },
+    {
+      "id": "goal-renovation",
+      "description": "Reforma da Casa",
+      "imageUrl": "https://images.unsplash.com/photo-1600607687932-e3edd2b09052?q=80&w=600&h=400&fit=crop",
+      "imageHint": "home interior"
+    },
+    {
+      "id": "goal-new-business",
+      "description": "Abrir um Negócio",
+      "imageUrl": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=600&h=400&fit=crop",
+      "imageHint": "business meeting"
     }
   ]
 }

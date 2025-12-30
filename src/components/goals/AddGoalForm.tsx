@@ -62,7 +62,13 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
 
   useEffect(() => {
     if (goal) {
-      form.reset(goal);
+      form.reset({
+        name: goal.name,
+        targetAmount: goal.targetAmount,
+        currentAmount: goal.currentAmount,
+        monthlySaving: goal.monthlySaving,
+        imageId: goal.imageId,
+      });
     }
   }, [goal, form]);
 
@@ -185,7 +191,7 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
                 <SelectContent>
                   {placeholderImages.map((img) => (
                     <SelectItem key={img.id} value={img.id}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Image src={img.imageUrl} alt={img.description} width={24} height={24} className="h-6 w-6 rounded-sm object-cover" />
                         <span>{img.description}</span>
                       </div>
