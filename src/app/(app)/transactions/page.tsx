@@ -1,11 +1,38 @@
-import { getTransactions } from "@/lib/data";
+'use client';
+
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Transaction } from '@/lib/types';
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { Header } from "@/components/common/Header";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from 'lucide-react';
 
-export default async function TransactionsPage() {
-  const transactions = await getTransactions();
+export default function TransactionsPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'users', user.uid, 'transactions'), orderBy('date', 'desc')) : null
+  , [firestore, user]);
+
+  const { data: transactions, isLoading } = useCollection<Transaction>(transactionsQuery);
+
+  if (isLoading) {
+    return (
+      <>
+        <Header title="Transações">
+          <AddTransactionDialog />
+        </Header>
+        <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </>
+    );
+  }
+
+  const safeTransactions = transactions || [];
 
   return (
     <>
@@ -20,13 +47,13 @@ export default async function TransactionsPage() {
             <TabsTrigger value="expenses">Despesas</TabsTrigger>
           </TabsList>
           <TabsContent value="all">
-            <TransactionList transactions={transactions} />
+            <TransactionList transactions={safeTransactions} />
           </TabsContent>
           <TabsContent value="income">
-            <TransactionList transactions={transactions.filter(t => t.type === 'income')} />
+            <TransactionList transactions={safeTransactions.filter(t => t.type === 'income')} />
           </TabsContent>
           <TabsContent value="expenses">
-            <TransactionList transactions={transactions.filter(t => t.type === 'expense')} />
+            <TransactionList transactions={safeTransactions.filter(t => t.type === 'expense')} />
           </TabsContent>
         </Tabs>
       </main>

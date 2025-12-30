@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -21,7 +22,7 @@ import {
   CircleHelp,
   LogOut,
 } from "lucide-react";
-import { useAuth } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -35,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
 const menuItems = [
@@ -48,6 +50,7 @@ const menuItems = [
 export function SidebarNav() {
   const pathname = usePathname();
   const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -66,6 +69,15 @@ export function SidebarNav() {
       });
     }
   };
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "?";
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
 
 
   return (
@@ -100,43 +112,36 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="mt-auto border-t border-sidebar-border">
-         <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Configurações">
-                    <Settings />
-                    <span>Configurações</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Ajuda">
-                    <CircleHelp />
-                    <span>Ajuda</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-               <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <SidebarMenuButton tooltip="Sair">
-                        <LogOut />
-                        <span>Sair</span>
-                    </SidebarMenuButton>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Você tem certeza que quer sair?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Você será desconectado da sua conta e precisará fazer login novamente.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSignOut}>Sair</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-            </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="mt-auto border-t border-sidebar-border p-2">
+        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'}/>
+              <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-semibold truncate">{user?.displayName || 'Usuário'}</span>
+                <span className="text-xs text-sidebar-foreground/80 truncate">{user?.email}</span>
+            </div>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <button className="ml-auto p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-primary hover:text-sidebar-primary-foreground">
+                        <LogOut className="h-4 w-4" />
+                    </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza que quer sair?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                    Você será desconectado da sua conta e precisará fazer login novamente.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSignOut}>Sair</AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
       </SidebarFooter>
     </>
   );

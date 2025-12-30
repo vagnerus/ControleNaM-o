@@ -35,6 +35,7 @@ import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import type { Category } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useUser } from "@/firebase";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -57,6 +58,9 @@ type AddTransactionFormProps = {
 export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
+  const { user } = useUser();
+  const firestore = useFirestore();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -69,17 +73,23 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
   const transactionType = form.watch("type");
 
   useEffect(() => {
-    async function fetchCategories() {
-      const fetchedCategories = await getCategories(transactionType);
-      setCategories(fetchedCategories);
-    }
-    fetchCategories();
+    const fetchedCategories = getCategories(transactionType);
+    setCategories(fetchedCategories);
     form.setValue("category", "");
   }, [transactionType, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Erro!",
+            description: "Você precisa estar logado para adicionar uma transação.",
+        });
+        return;
+    }
+
     try {
-        await addTransaction({ ...values, date: values.date.toISOString() });
+        addTransaction(firestore, user.uid, { ...values, date: values.date.toISOString() });
         toast({
             title: "Sucesso!",
             description: "Transação adicionada com sucesso.",
@@ -92,7 +102,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Não foi possível adicionar a transação.",
+            description: "Não foi possível adicionar a transação. Verifique os logs para mais detalhes.",
         });
     }
   }
@@ -153,7 +163,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.name}>
                       <div className="flex items-center gap-2">
-                        <cat.icon className="h-4 w-4" />
+                        {cat.icon && <cat.icon className="h-4 w-4" />}
                         {cat.name}
                       </div>
                     </SelectItem>

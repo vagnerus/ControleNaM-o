@@ -4,7 +4,7 @@ export type Transaction = {
   id: string;
   type: 'income' | 'expense';
   amount: number;
-  date: string;
+  date: string; // Should be ISO string
   description: string;
   category: string;
   cardId?: string;
@@ -15,16 +15,6 @@ export type Category = {
   name: string;
   icon: LucideIcon;
   type: 'income' | 'expense' | 'all';
-};
-
-export type RecurringTransaction = {
-  id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  description: string;
-  category: string;
-  frequency: 'monthly' | 'weekly' | 'yearly';
-  startDate: string;
 };
 
 export type CreditCard = {
@@ -41,11 +31,11 @@ export type Budget = {
   id: string;
   category: string;
   amount: number;
-  spent: number;
+  spent: number; // This will be calculated on the client
 };
 
 export type FinancialGoal = {
-  id: string;
+  id:string;
   name: string;
   targetAmount: number;
   currentAmount: number;
