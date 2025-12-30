@@ -11,7 +11,22 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Home, Landmark, ArrowRightLeft, LogOut } from "lucide-react";
+import {
+  Home,
+  Landmark,
+  ArrowRightLeft,
+  LogOut,
+  Settings,
+  BarChart,
+  Calendar,
+  Tags,
+  CreditCard,
+  Target,
+  FileUp,
+  FileDown,
+  PieChart,
+  GanttChart,
+} from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -27,13 +42,35 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Button } from "../ui/button";
 
-
-const menuItems = [
+const mainMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/accounts", label: "Contas", icon: Landmark },
   { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
+  { href: "/cards", label: "Cartões", icon: CreditCard },
 ];
+
+const secondaryMenuItems = [
+  { href: "/budgets", label: "Planejamento", icon: GanttChart },
+  { href: "/goals", label: "Objetivos", icon: Target },
+  { href: "/calendar", label: "Calendário", icon: Calendar },
+];
+
+const dataMenuItems = [
+  { href: "/reports", label: "Relatórios", icon: PieChart },
+  { href: "/performance", label: "Desempenho", icon: BarChart },
+];
+
+const organizationMenuItems = [
+  { href: "/categories", label: "Categorias", icon: Tags },
+  { href: "/tags", label: "Tags", icon: Tags },
+]
+
+const toolsMenuItems = [
+    { href: "/import", label: "Importar", icon: FileUp },
+    { href: "/export", label: "Exportar", icon: FileDown },
+]
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -85,7 +122,7 @@ export function SidebarNav() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map((item) => (
+          {mainMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
@@ -99,6 +136,69 @@ export function SidebarNav() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+        <SidebarMenu>
+          {secondaryMenuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        <SidebarMenu>
+            <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Dados</p>
+          {dataMenuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+        <SidebarMenu>
+             <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Organização</p>
+            {organizationMenuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                <Link href={item.href} legacyBehavior passHref>
+                    <SidebarMenuButton
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                    >
+                    <item.icon />
+                    <span>{item.label}</span>
+                    </SidebarMenuButton>
+                </Link>
+                </SidebarMenuItem>
+            ))}
+        </SidebarMenu>
+        <SidebarMenu>
+            <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Ferramentas</p>
+            {toolsMenuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                    <Link href={item.href} legacyBehavior passHref>
+                        <SidebarMenuButton
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={item.label}
+                        >
+                        <item.icon />
+                        <span>{item.label}</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            ))}
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="mt-auto border-t border-sidebar-border p-2">
         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent">
@@ -110,25 +210,32 @@ export function SidebarNav() {
                 <span className="text-sm font-semibold truncate">{user?.displayName || 'Usuário'}</span>
                 <span className="text-xs text-sidebar-foreground/80 truncate">{user?.email}</span>
             </div>
-             <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <button className="ml-auto p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-primary hover:text-sidebar-primary-foreground">
-                        <LogOut className="h-4 w-4" />
-                    </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Você tem certeza que quer sair?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                    Você será desconectado da sua conta e precisará fazer login novamente.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSignOut}>Sair</AlertDialogAction>
-                </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+             <div className="ml-auto flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                    <Link href="/settings">
+                        <Settings className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <button className="p-1.5 rounded-md text-sidebar-foreground/70 hover:bg-sidebar-primary hover:text-sidebar-primary-foreground">
+                            <LogOut className="h-4 w-4" />
+                        </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza que quer sair?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        Você será desconectado da sua conta e precisará fazer login novamente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSignOut}>Sair</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
       </SidebarFooter>
     </>
