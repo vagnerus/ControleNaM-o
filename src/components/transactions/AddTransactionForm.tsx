@@ -116,7 +116,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     }
     // Reset credit card if type changes to income
     if (transactionType === 'income') {
-        form.setValue('creditCardId', '');
+        form.setValue('creditCardId', undefined);
     }
   }, [transactionType, form]);
 
@@ -253,14 +253,14 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={(value) => field.onChange(value === 'null' ? undefined : value)} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Nenhum" />
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="null">Nenhum</SelectItem>
                         {cards?.map((card) => (
                             <SelectItem key={card.id} value={card.id}>
                             {card.name} (final {card.last4})
