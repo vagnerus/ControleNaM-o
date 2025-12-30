@@ -1,4 +1,5 @@
 
+
 import {
   Table,
   TableBody,
@@ -13,12 +14,13 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Paperclip } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -36,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
 import { AddTransactionDialog } from "./AddTransactionDialog";
 import { useState } from "react";
+import Link from "next/link";
 
 type TransactionListProps = {
   transactions: Transaction[];
@@ -102,7 +105,12 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
             return (
               <TableRow key={transaction.id}>
                 <TableCell>
-                  <div className="font-medium">{transaction.description}</div>
+                  <div className="font-medium flex items-center gap-2">
+                    {transaction.description}
+                    {transaction.attachmentUrls && transaction.attachmentUrls.length > 0 && (
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </div>
                   <div className="text-sm text-muted-foreground">
                     {category?.name || 'Sem categoria'}
                   </div>
@@ -142,6 +150,20 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
                                     <Edit className="mr-2 h-4 w-4" />
                                     Editar
                                 </DropdownMenuItem>
+                                {transaction.attachmentUrls && transaction.attachmentUrls.length > 0 && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    {transaction.attachmentUrls.map((url, index) => (
+                                      <DropdownMenuItem key={index} asChild>
+                                        <Link href={url} target="_blank" rel="noopener noreferrer">
+                                          <Paperclip className="mr-2 h-4 w-4" />
+                                          Ver Anexo {index + 1}
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </>
+                                )}
+                                <DropdownMenuSeparator />
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
                                         <Trash2 className="mr-2 h-4 w-4" />

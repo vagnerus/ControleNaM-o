@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { saveTransaction } from "@/lib/data.tsx";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Paperclip, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState, useMemo } from "react";
@@ -42,6 +42,8 @@ import { collection, query, where } from "firebase/firestore";
 import { MagicInput } from "../common/MagicInput";
 import { Switch } from "../ui/switch";
 import { MultiSelect, Option } from "../ui/multi-select";
+import { useStorage, uploadAttachment } from "@/firebase/storage";
+import { Badge } from "../ui/badge";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -59,6 +61,7 @@ const formSchema = z.object({
     required_error: "A conta é obrigatória.",
   }),
   creditCardId: z.string().optional(),
+  attachmentUrls: z.array(z.string()).optional(),
   isInstallment: z.boolean().default(false),
   totalInstallments: z.coerce.number().optional(),
   tags: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
@@ -81,7 +84,10 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
-  const [isInstallment, setIsInstallment] = useState(false);
+  const storage = useStorage();
+  
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -91,6 +97,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       description: "",
       date: new Date(),
       creditCardId: "",
+      attachmentUrls: [],
       isInstallment: false,
       totalInstallments: 2,
       tags: [],
@@ -132,9 +139,10 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         amount: transaction.amount || 0,
         date: new Date(transaction.date),
         creditCardId: transaction.creditCardId || "",
+        attachmentUrls: transaction.attachmentUrls || [],
         tags: selectedTags,
       });
-      setIsInstallment(!!transaction.isInstallment);
+      setExistingAttachments(transaction.attachmentUrls || []);
     }
   }, [transaction, form, tagOptions]);
 
@@ -157,6 +165,20 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       }
   }, [useCreditCard, form]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  const removeExistingAttachment = (url: string) => {
+    setExistingAttachments(prev => prev.filter(item => item !== url));
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({
@@ -176,11 +198,17 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     }
 
     try {
+        const attachmentUploadPromises = attachments.map(file => uploadAttachment(storage, user.uid, file));
+        const newAttachmentUrls = await Promise.all(attachmentUploadPromises);
+        
+        const finalAttachments = [...existingAttachments, ...newAttachmentUrls];
+
         saveTransaction(firestore, user.uid, { 
             ...values,
             tagIds: values.tags?.map(t => t.value),
             date: values.date.toISOString(),
-            creditCardId: values.creditCardId || undefined
+            creditCardId: values.creditCardId || undefined,
+            attachmentUrls: finalAttachments,
         }, transaction?.id);
         toast({
             title: "Sucesso!",
@@ -429,6 +457,45 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             </FormItem>
           )}
         />
+        
+        <FormItem>
+            <FormLabel>Anexos (Opcional)</FormLabel>
+            <FormControl>
+                <div className="flex items-center gap-2">
+                    <label htmlFor="attachment-upload" className="flex-grow">
+                        <Input id="attachment-upload" type="file" multiple onChange={handleFileChange} className="hidden" />
+                        <Button type="button" variant="outline" asChild>
+                            <span className="cursor-pointer flex items-center gap-2">
+                                <Paperclip className="h-4 w-4" />
+                                Adicionar Comprovante
+                            </span>
+                        </Button>
+                    </label>
+                </div>
+            </FormControl>
+            <div className="mt-2 space-y-2">
+                {existingAttachments.map((url, index) => (
+                    <Badge key={index} variant="secondary" className="flex justify-between items-center">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="truncate hover:underline">
+                            Anexo {index + 1}
+                        </a>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 -mr-1" onClick={() => removeExistingAttachment(url)}>
+                            <X className="h-3 w-3"/>
+                        </Button>
+                    </Badge>
+                ))}
+                {attachments.map((file, index) => (
+                    <Badge key={index} variant="outline" className="flex justify-between items-center">
+                        <span className="truncate">{file.name}</span>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 -mr-1" onClick={() => removeAttachment(index)}>
+                             <X className="h-3 w-3"/>
+                        </Button>
+                    </Badge>
+                ))}
+            </div>
+             <FormMessage />
+        </FormItem>
+
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
