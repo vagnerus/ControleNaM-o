@@ -17,7 +17,7 @@ export default async function TransactionsPage() {
           <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
             <TabsTrigger value="all">Todas</TabsTrigger>
             <TabsTrigger value="income">Receitas</TabsTrigger>
-            <TabsTrigger value="expenses">Despesas</Tabs-Trigger>
+            <TabsTrigger value="expenses">Despesas</TabsTrigger>
           </TabsList>
           <TabsContent value="all">
             <TransactionList transactions={transactions} />
