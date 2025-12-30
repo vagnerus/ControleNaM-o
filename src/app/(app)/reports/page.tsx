@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -8,7 +9,7 @@ import type { Transaction, Category } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { CategoryChart } from '@/components/charts/CategoryChart';
-import { getIconComponent } from '@/lib/data';
+import { getIconComponent } from '@/lib/data.tsx';
 
 export default function ReportsPage() {
     const { user } = useUser();
@@ -98,5 +99,3 @@ export default function ReportsPage() {
     </>
   );
 }
-
-    

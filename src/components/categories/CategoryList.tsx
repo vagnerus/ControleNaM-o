@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Category } from "@/lib/types";
-import { deleteCategory, getIconComponent, isCategoryInUse } from "@/lib/data";
+import { deleteCategory, getIconComponent, isCategoryInUse } from "@/lib/data.tsx";
 import { MoreVertical, Edit, Trash2 } from "lucide-react";
 import {
   DropdownMenu,

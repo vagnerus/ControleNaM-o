@@ -24,7 +24,7 @@ import {
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
-import { deleteAccount, getBankIcon } from "@/lib/data";
+import { deleteAccount, getBankIcon } from "@/lib/data.tsx";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { AddAccountDialog } from "./AddAccountDialog";

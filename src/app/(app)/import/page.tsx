@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { FileUp, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { saveTransaction, saveAccount, saveCategory } from '@/lib/data';
+import { saveTransaction, saveAccount, saveCategory } from '@/lib/data.tsx';
 import { format } from 'date-fns';
 
 type ParsedTransaction = Omit<Transaction, 'id' | 'accountId' | 'categoryId'> & {

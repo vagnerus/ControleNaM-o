@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Transaction, Account, Category, Tag } from "@/lib/types";
-import { deleteTransaction, getCategoryDetails } from "@/lib/data";
+import { deleteTransaction, getCategoryDetails } from "@/lib/data.tsx";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
