@@ -1,4 +1,5 @@
 
+
 export type Transaction = {
   id: string;
   type: 'income' | 'expense';
