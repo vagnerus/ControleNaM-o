@@ -36,7 +36,7 @@ export default function DashboardPage() {
   , [firestore, user]);
   
   const accountsQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'accounts') : null
+    user ? query(collection(firestore, 'users', user.uid, 'accounts')) : null
   , [firestore, user]);
 
   const budgetsQuery = useMemoFirebase(() =>
@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
     )
@@ -146,9 +146,13 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                {accounts?.slice(0, 2).map((account) => (
-                  <AccountCard key={account.id} account={account} isCompact />
-                ))}
+                {accounts && accounts.length > 0 ? (
+                  accounts.slice(0, 3).map((account) => (
+                    <AccountCard key={account.id} account={account} isCompact />
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -189,9 +193,13 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                {budgets?.slice(0, 2).map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
-                ))}
+                {budgets && budgets.length > 0 ? (
+                  budgets.slice(0, 2).map((budget) => (
+                    <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+                  ))
+                ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -211,9 +219,13 @@ export default function DashboardPage() {
                 </Button>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {goals?.slice(0, 3).map((goal) => (
-                <GoalCard key={goal.id} goal={goal} />
-              ))}
+              {goals && goals.length > 0 ? (
+                goals.slice(0, 3).map((goal) => (
+                  <GoalCard key={goal.id} goal={goal} />
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground col-span-full">Nenhum objetivo encontrado.</p>
+              )}
             </CardContent>
           </Card>
         </section>

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Transaction": {
@@ -34,10 +35,6 @@
         "categoryId": {
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
-        },
-        "subcategoryId": {
-          "type": "string",
-          "description": "Reference to Subcategory. (Relationship: Subcategory 1:N Transaction)"
         },
         "accountId": {
           "type": "string",
@@ -114,35 +111,6 @@
         "id",
         "name",
         "type"
-      ]
-    },
-    "Subcategory": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Subcategory",
-      "type": "object",
-      "description": "Represents a subcategory for further classifying transactions within a category.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Subcategory entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the subcategory."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the subcategory."
-        },
-        "categoryId": {
-          "type": "string",
-          "description": "Reference to Category. (Relationship: Category 1:N Subcategory)"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "categoryId"
       ]
     },
     "Account": {
@@ -440,26 +408,6 @@
             {
               "name": "categoryId",
               "description": "The ID of the category."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/subcategories/{subcategoryId}",
-        "definition": {
-          "entityName": "Subcategory",
-          "schema": {
-            "$ref": "#/backend/entities/Subcategory"
-          },
-          "description": "Stores subcategories for further classifying transactions within a category. Each subcategory includes a name and a reference to its parent category.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the subcategory."
-            },
-            {
-              "name": "subcategoryId",
-              "description": "The ID of the subcategory."
             }
           ]
         }

@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
  * data is considered private and is only accessible by the user who created it. There is
@@ -88,21 +89,6 @@ service cloud.firestore {
        * @principle Restricts access to a user's own data tree.
        */
       match /categories/{categoryId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
-      }
-
-      /**
-       * @description Controls access to user-specific subcategory data.
-       * @path /users/{userId}/subcategories/{subcategoryId}
-       * @allow A logged-in user (auth.uid='user123') can (delete) their own subcategory at `/users/user123/subcategories/sub456`.
-       * @deny An unauthenticated user is denied from (get)ting a subcategory at `/users/user123/subcategories/sub456`.
-       * @principle Restricts access to a user's own data tree.
-       */
-      match /subcategories/{subcategoryId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
         allow create: if isOwner(userId);
