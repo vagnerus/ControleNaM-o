@@ -96,7 +96,7 @@ export default function DashboardPage() {
           <SummaryCard
             title="Receitas"
             value={summary.income}
-            icon={<TrendingUp className="text-green-500" />}
+            icon={<TrendingUp className="text-emerald-500" />}
           />
           <SummaryCard
             title="Despesas"

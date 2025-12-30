@@ -8,6 +8,7 @@ import { CreditCardView } from "@/components/cards/CreditCardView";
 import { Loader2 } from 'lucide-react';
 import { AddCardDialog } from '@/components/cards/AddCardDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AddTransactionDialog } from '@/components/transactions/AddTransactionDialog';
 
 export default function CardsPage() {
   const { user } = useUser();
@@ -28,7 +29,7 @@ export default function CardsPage() {
 
   const cardsWithTransactions = (cards || []).map(card => {
     const cardTransactions = (transactions || []).filter(
-      (transaction) => transaction.cardId === card.id
+      (transaction) => transaction.creditCardId === card.id
     );
     const spentAmount = cardTransactions.reduce((sum, t) => sum + t.amount, 0);
     return { ...card, transactions: cardTransactions, spent: spentAmount };
@@ -37,7 +38,10 @@ export default function CardsPage() {
   return (
     <>
       <Header title="Cartões de Crédito">
-        <AddCardDialog />
+        <div className="flex items-center gap-2">
+            <AddTransactionDialog />
+            <AddCardDialog />
+        </div>
       </Header>
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {isLoading ? (

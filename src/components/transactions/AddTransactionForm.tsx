@@ -33,9 +33,11 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
-import type { Category } from "@/lib/types";
+import type { Category, CreditCard } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { Checkbox } from "../ui/checkbox";
+import { collection } from "firebase/firestore";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -49,6 +51,9 @@ const formSchema = z.object({
   category: z.string({
     required_error: "A categoria é obrigatória.",
   }),
+  creditCardId: z.string().optional(),
+  isInstallment: z.boolean().default(false),
+  totalInstallments: z.coerce.number().optional(),
 });
 
 type AddTransactionFormProps = {
@@ -60,6 +65,11 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const { user } = useUser();
   const firestore = useFirestore();
+
+  const cardsQuery = useMemoFirebase(() => 
+    user ? collection(firestore, 'users', user.uid, 'creditCards') : null
+  , [firestore, user]);
+  const { data: cards } = useCollection<CreditCard>(cardsQuery);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,15 +77,25 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
       type: "expense",
       description: "",
       date: new Date(),
+      isInstallment: false,
     },
   });
 
   const transactionType = form.watch("type");
+  const isInstallment = form.watch("isInstallment");
 
   useEffect(() => {
     const fetchedCategories = getCategories(transactionType);
     setCategories(fetchedCategories);
     form.setValue("category", "");
+  }, [transactionType, form]);
+
+  useEffect(() => {
+    if (transactionType === 'income') {
+        form.setValue('creditCardId', undefined);
+        form.setValue('isInstallment', false);
+        form.setValue('totalInstallments', undefined);
+    }
   }, [transactionType, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -87,9 +107,26 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
         });
         return;
     }
+     if (values.creditCardId && values.type === 'income') {
+      form.setError('creditCardId', { message: 'Receitas não podem ser associadas a um cartão de crédito.'});
+      return;
+    }
+    if (values.isInstallment && !values.creditCardId) {
+        form.setError('creditCardId', { message: 'Selecione um cartão de crédito para compras parceladas.'});
+        return;
+    }
+    if (values.isInstallment && (!values.totalInstallments || values.totalInstallments <= 1)) {
+        form.setError('totalInstallments', { message: 'O número de parcelas deve ser maior que 1.'});
+        return;
+    }
+
 
     try {
-        addTransaction(firestore, user.uid, { ...values, date: values.date.toISOString() });
+        addTransaction(firestore, user.uid, { 
+            ...values, 
+            date: values.date.toISOString(),
+            totalInstallments: values.isInstallment ? values.totalInstallments : 1,
+        });
         toast({
             title: "Sucesso!",
             description: "Transação adicionada com sucesso.",
@@ -109,7 +146,7 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
         <FormField
           control={form.control}
           name="type"
@@ -174,6 +211,75 @@ export function AddTransactionForm({ onFinished }: AddTransactionFormProps) {
             </FormItem>
           )}
         />
+
+        {transactionType === 'expense' && (
+            <FormField
+                control={form.control}
+                name="creditCardId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Nenhum" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        <SelectItem value="">Nenhum</SelectItem>
+                        {cards?.map((card) => (
+                            <SelectItem key={card.id} value={card.id}>
+                                {card.name} (final {card.last4})
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
+        
+        {transactionType === 'expense' && form.getValues('creditCardId') && (
+            <div className="space-y-4 rounded-md border p-4">
+                <FormField
+                    control={form.control}
+                    name="isInstallment"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                            <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel>
+                            É uma compra parcelada?
+                            </FormLabel>
+                        </div>
+                        </FormItem>
+                    )}
+                />
+                {isInstallment && (
+                    <FormField
+                        control={form.control}
+                        name="totalInstallments"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Número de Parcelas</FormLabel>
+                            <FormControl>
+                                <Input type="number" min="2" placeholder="Ex: 12" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+            </div>
+        )}
+
+
         <FormField
           control={form.control}
           name="date"

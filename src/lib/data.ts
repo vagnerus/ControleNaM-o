@@ -19,6 +19,8 @@ import type { Category, Transaction, CreditCard } from '@/lib/types';
 import { addDoc, collection, Firestore, doc, deleteDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { addMonths } from 'date-fns';
+
 
 // This file now contains the static definitions for categories,
 // but all transactional data functions will interact with Firestore.
@@ -31,7 +33,7 @@ const STATIC_CATEGORIES: Category[] = [
   { id: 'cat_5', name: 'Saúde', icon: Heart, type: 'expense' },
   { id: 'cat_6', name: 'Lazer', icon: Film, type: 'expense' },
   { id: 'cat_7', name: 'Educação', icon: GraduationCap, type: 'expense' },
-  { id: 'cat_8', name: 'Viagem', icon: Plane, type: 'expense' },
+  { id 'cat_8', name: 'Viagem', icon: Plane, type: 'expense' },
   { id: 'cat_9', name: 'Presentes', icon: Gift, type: 'expense' },
   { id: 'cat_10', name: 'Outras Despesas', icon: Receipt, type: 'expense' },
   { id: 'cat_11', name: 'Salário', icon: Briefcase, type: 'income' },
@@ -52,38 +54,62 @@ export const getCategories = (type?: 'income' | 'expense'): Category[] => {
 export const addTransaction = (
   firestore: Firestore,
   userId: string,
-  transaction: Omit<Transaction, 'id'>
+  transaction: Omit<Transaction, 'id'> & { totalInstallments?: number }
 ) => {
   if (!userId) {
     throw new Error('User must be authenticated to add a transaction.');
   }
   const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
   
-  // Non-blocking update
-  addDoc(transactionsCollection, transaction)
-    .catch(error => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: transactionsCollection.path,
-          operation: 'create',
-          requestResourceData: transaction,
-        })
-      );
-    });
+  if (transaction.totalInstallments && transaction.totalInstallments > 1) {
+    const installmentAmount = transaction.amount / transaction.totalInstallments;
+    for (let i = 0; i < transaction.totalInstallments; i++) {
+        const installmentDate = addMonths(new Date(transaction.date), i);
+        const installmentTransaction = {
+            ...transaction,
+            amount: installmentAmount,
+            date: installmentDate.toISOString(),
+            installmentNumber: i + 1,
+        };
+
+        addDoc(transactionsCollection, installmentTransaction)
+            .catch(error => {
+                console.error("Error adding installment transaction: ", error);
+                // We can decide how to handle partial failures. 
+                // Maybe emit one error for the whole batch.
+            });
+    }
+  } else {
+    // Non-installment or single installment transaction
+    addDoc(transactionsCollection, transaction)
+      .catch(error => {
+        errorEmitter.emit(
+          'permission-error',
+          new FirestorePermissionError({
+            path: transactionsCollection.path,
+            operation: 'create',
+            requestResourceData: transaction,
+          })
+        );
+      });
+  }
 };
 
 export const addCard = (
   firestore: Firestore,
   userId: string,
-  card: Omit<CreditCard, 'id'>
+  cardData: Omit<CreditCard, 'id' | 'spent' | 'transactions'>
 ) => {
   if (!userId) {
     throw new Error('User must be authenticated to add a card.');
   }
   const cardsCollection = collection(firestore, 'users', userId, 'creditCards');
   
-  addDoc(cardsCollection, card)
+  const newCard: Omit<CreditCard, 'id'> = {
+    ...cardData,
+  };
+
+  addDoc(cardsCollection, newCard)
     .catch(error => {
       console.error("Error adding card: ", error);
       errorEmitter.emit(
@@ -91,7 +117,7 @@ export const addCard = (
         new FirestorePermissionError({
           path: cardsCollection.path,
           operation: 'create',
-          requestResourceData: card,
+          requestResourceData: newCard,
         })
       );
     });

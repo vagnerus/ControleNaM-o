@@ -7,7 +7,9 @@ export type Transaction = {
   date: string; // Should be ISO string
   description: string;
   category: string;
-  cardId?: string;
+  creditCardId?: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
 };
 
 export type Category = {

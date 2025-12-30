@@ -53,6 +53,11 @@ export function TransactionList({ transactions }: TransactionListProps) {
                   <div className="text-sm text-muted-foreground sm:hidden">
                     {category?.name}
                   </div>
+                  {transaction.totalInstallments && transaction.totalInstallments > 1 && (
+                    <div className="text-xs text-muted-foreground">
+                        Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {format(new Date(transaction.date), "dd/MM/yyyy", { locale: ptBR })}
@@ -61,7 +66,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                   className={cn(
                     "text-right font-semibold",
                     transaction.type === "income"
-                      ? "text-green-600"
+                      ? "text-emerald-600"
                       : "text-red-600"
                   )}
                 >
