@@ -1,43 +1,66 @@
 {
   "entities": {
+    "UserAccount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserAccount",
+      "type": "object",
+      "description": "Stores user account information. Does NOT include authentication credentials.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user account."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "createdAt"
+      ]
+    },
     "Transaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Transaction",
       "type": "object",
-      "description": "Represents a financial transaction, either an expense or income.",
+      "description": "Represents a financial transaction (expense or income).",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the transaction."
         },
-        "transactionDate": {
+        "userAccountId": {
           "type": "string",
-          "description": "The date the transaction occurred.",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N Transaction)"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the transaction.",
           "format": "date-time"
         },
         "amount": {
           "type": "number",
-          "description": "The amount of the transaction."
+          "description": "Amount of the transaction."
         },
         "description": {
           "type": "string",
-          "description": "A description of the transaction."
+          "description": "Description of the transaction."
         },
         "categoryId": {
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
         },
-        "subcategoryId": {
-          "type": "string",
-          "description": "Reference to Subcategory. (Relationship: Subcategory 1:N Transaction)"
-        },
-        "accountId": {
-          "type": "string",
-          "description": "Reference to Account. (Relationship: Account 1:N Transaction)"
-        },
-        "attachmentIds": {
+        "attachmentUrls": {
           "type": "array",
-          "description": "References to Attachments. (Relationship: Attachment 1:N Transaction)",
+          "description": "URLs of attached files (receipts, invoices).",
           "items": {
             "type": "string"
           }
@@ -48,201 +71,145 @@
           "items": {
             "type": "string"
           }
-        },
-        "isRecurring": {
-          "type": "boolean",
-          "description": "Indicates if the transaction is recurring."
-        },
-        "creditCardId": {
-          "type": "string",
-          "description": "Reference to CreditCard. (Relationship: CreditCard 1:N Transaction) Nullable if not related to a credit card."
-        },
-        "installmentId": {
-          "type": "string",
-          "description": "Reference to Installment. (Relationship: Installment 1:N Transaction) Nullable if not an installment."
         }
       },
       "required": [
         "id",
-        "transactionDate",
+        "userAccountId",
+        "date",
         "amount",
         "description",
-        "categoryId",
-        "accountId"
+        "categoryId"
       ]
     },
     "Category": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Category",
       "type": "object",
-      "description": "Represents a category for classifying transactions (e.g., Food, Transportation).",
+      "description": "Represents a category for classifying transactions.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the category."
         },
+        "userAccountId": {
+          "type": "string",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N Category)"
+        },
         "name": {
           "type": "string",
-          "description": "The name of the category."
+          "description": "Name of the category."
         },
-        "description": {
+        "parentId": {
           "type": "string",
-          "description": "A description of the category."
+          "description": "Reference to parent Category. Represents sub-category relationship.  If null, this is a top-level category. (Relationship: Category 1:N Category)"
         },
         "type": {
           "type": "string",
-          "description": "The type of the category, either 'income' or 'expense'."
+          "description": "Type of the category (e.g., expense, income)."
         }
       },
       "required": [
         "id",
+        "userAccountId",
         "name",
         "type"
       ]
     },
-    "Subcategory": {
+    "RecurringTransaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Subcategory",
+      "title": "RecurringTransaction",
       "type": "object",
-      "description": "Represents a subcategory for further classifying transactions within a category.",
+      "description": "Represents a recurring transaction (e.g., rent, salary).",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the subcategory."
+          "description": "Unique identifier for the recurring transaction."
         },
-        "name": {
+        "userAccountId": {
           "type": "string",
-          "description": "The name of the subcategory."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the subcategory."
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N RecurringTransaction)"
         },
         "categoryId": {
           "type": "string",
-          "description": "Reference to Category. (Relationship: Category 1:N Subcategory)"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "categoryId"
-      ]
-    },
-    "Account": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Account",
-      "type": "object",
-      "description": "Represents a bank account or other financial account.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the account."
+          "description": "Reference to Category. (Relationship: Category 1:N RecurringTransaction)"
         },
-        "name": {
+        "startDate": {
           "type": "string",
-          "description": "The name of the account."
+          "description": "Date when the recurring transaction starts.",
+          "format": "date-time"
         },
-        "type": {
+        "endDate": {
           "type": "string",
-          "description": "The type of account (e.g., checking, savings, credit card)."
+          "description": "Date when the recurring transaction ends. If null, it continues indefinitely.",
+          "format": "date-time"
         },
-        "balance": {
+        "frequency": {
+          "type": "string",
+          "description": "Frequency of the transaction (e.g., monthly, weekly)."
+        },
+        "amount": {
           "type": "number",
-          "description": "The current balance of the account."
+          "description": "Amount of the recurring transaction."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the recurring transaction."
         }
       },
       "required": [
         "id",
-        "name",
-        "type",
-        "balance"
-      ]
-    },
-    "Attachment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Attachment",
-      "type": "object",
-      "description": "Represents a file attached to a transaction (e.g., a receipt).",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the attachment."
-        },
-        "filename": {
-          "type": "string",
-          "description": "The name of the file."
-        },
-        "url": {
-          "type": "string",
-          "description": "The URL where the file is stored.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "filename",
-        "url"
-      ]
-    },
-    "Tag": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Tag",
-      "type": "object",
-      "description": "Represents a tag that can be applied to transactions for grouping and filtering.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the tag."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the tag."
-        }
-      },
-      "required": [
-        "id",
-        "name"
+        "userAccountId",
+        "categoryId",
+        "startDate",
+        "frequency",
+        "amount",
+        "description"
       ]
     },
     "CreditCard": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "CreditCard",
       "type": "object",
-      "description": "Represents a credit card account.",
+      "description": "Represents a credit card.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the credit card."
         },
+        "userAccountId": {
+          "type": "string",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N CreditCard)"
+        },
         "name": {
           "type": "string",
-          "description": "The name of the credit card."
+          "description": "Name of the credit card (e.g., Visa, Mastercard)."
         },
         "cardNumber": {
           "type": "string",
-          "description": "The credit card number (masked for security)."
+          "description": "Credit card number (masked for security)."
+        },
+        "creditLimit": {
+          "type": "number",
+          "description": "Credit limit of the card."
         },
         "closingDate": {
           "type": "number",
-          "description": "The day of the month the credit card statement closes."
+          "description": "Day of the month when the credit card closes."
         },
         "dueDate": {
           "type": "number",
-          "description": "The day of the month the credit card payment is due."
-        },
-        "limit": {
-          "type": "number",
-          "description": "The credit limit of the card."
+          "description": "Day of the month when the credit card is due."
         }
       },
       "required": [
         "id",
+        "userAccountId",
         "name",
         "cardNumber",
+        "creditLimit",
         "closingDate",
-        "dueDate",
-        "limit"
+        "dueDate"
       ]
     },
     "Installment": {
@@ -255,29 +222,40 @@
           "type": "string",
           "description": "Unique identifier for the installment."
         },
+        "transactionId": {
+          "type": "string",
+          "description": "Reference to Transaction. (Relationship: Transaction 1:N Installment)"
+        },
         "creditCardId": {
           "type": "string",
           "description": "Reference to CreditCard. (Relationship: CreditCard 1:N Installment)"
         },
-        "totalInstallments": {
-          "type": "number",
-          "description": "The total number of installments for the purchase."
-        },
         "installmentNumber": {
           "type": "number",
-          "description": "The current installment number."
+          "description": "The installment number (e.g., 1 of 12)."
         },
         "amount": {
           "type": "number",
-          "description": "The amount of each installment."
+          "description": "Amount of the installment."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date for the installment.",
+          "format": "date-time"
+        },
+        "isPaid": {
+          "type": "boolean",
+          "description": "Indicates whether the installment has been paid."
         }
       },
       "required": [
         "id",
+        "transactionId",
         "creditCardId",
-        "totalInstallments",
         "installmentNumber",
-        "amount"
+        "amount",
+        "dueDate",
+        "isPaid"
       ]
     },
     "Budget": {
@@ -290,28 +268,29 @@
           "type": "string",
           "description": "Unique identifier for the budget."
         },
-        "month": {
-          "type": "number",
-          "description": "The month the budget is for (1-12)."
-        },
-        "year": {
-          "type": "number",
-          "description": "The year the budget is for."
+        "userAccountId": {
+          "type": "string",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N Budget)"
         },
         "categoryId": {
           "type": "string",
           "description": "Reference to Category. (Relationship: Category 1:N Budget)"
         },
+        "month": {
+          "type": "string",
+          "description": "The month for which the budget is defined (e.g., 2024-01).",
+          "format": "date-time"
+        },
         "amount": {
           "type": "number",
-          "description": "The budgeted amount for the category."
+          "description": "Budgeted amount for the category in the specified month."
         }
       },
       "required": [
         "id",
-        "month",
-        "year",
+        "userAccountId",
         "categoryId",
+        "month",
         "amount"
       ]
     },
@@ -325,41 +304,92 @@
           "type": "string",
           "description": "Unique identifier for the financial goal."
         },
+        "userAccountId": {
+          "type": "string",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N FinancialGoal)"
+        },
         "name": {
           "type": "string",
-          "description": "The name of the financial goal."
+          "description": "Name of the financial goal (e.g., 'New Car')."
         },
         "targetAmount": {
           "type": "number",
-          "description": "The total amount to save for the goal."
+          "description": "Total amount to be saved."
         },
-        "monthlyContribution": {
+        "monthlySaving": {
           "type": "number",
-          "description": "The amount to save each month."
+          "description": "Amount to save each month."
         },
         "currentSavings": {
           "type": "number",
-          "description": "The current amount saved towards the goal."
+          "description": "Current amount saved towards the goal."
+        },
+        "targetDate": {
+          "type": "string",
+          "description": "Target completion date for the goal.",
+          "format": "date-time"
         }
       },
       "required": [
         "id",
+        "userAccountId",
         "name",
         "targetAmount",
-        "monthlyContribution",
-        "currentSavings"
+        "monthlySaving",
+        "currentSavings",
+        "targetDate"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Represents a tag for grouping transactions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the tag."
+        },
+        "userAccountId": {
+          "type": "string",
+          "description": "Reference to UserAccount. (Relationship: UserAccount 1:N Tag)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the tag (e.g., #vacation2024)."
+        }
+      },
+      "required": [
+        "id",
+        "userAccountId",
+        "name"
       ]
     }
   },
   "auth": {
     "providers": [
       "password",
-      "anonymous",
-      "google.com"
+      "anonymous"
     ]
   },
   "firestore": {
     "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserAccount",
+          "schema": {
+            "$ref": "#/backend/entities/UserAccount"
+          },
+          "description": "Stores user account information. The `userId` parameter corresponds to the Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
       {
         "path": "/users/{userId}/transactions/{transactionId}",
         "definition": {
@@ -367,15 +397,15 @@
           "schema": {
             "$ref": "#/backend/entities/Transaction"
           },
-          "description": "Stores financial transactions for each user. Secured by path-based ownership: only the user can access their transactions.",
+          "description": "Stores transaction data for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the transaction."
+              "description": "The Firebase Auth UID of the user."
             },
             {
               "name": "transactionId",
-              "description": "The ID of the transaction."
+              "description": "The unique identifier for the transaction."
             }
           ]
         }
@@ -387,95 +417,35 @@
           "schema": {
             "$ref": "#/backend/entities/Category"
           },
-          "description": "Stores categories for each user. Secured by path-based ownership: only the user can access their categories.",
+          "description": "Stores categories for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the category."
+              "description": "The Firebase Auth UID of the user."
             },
             {
               "name": "categoryId",
-              "description": "The ID of the category."
+              "description": "The unique identifier for the category."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/subcategories/{subcategoryId}",
+        "path": "/users/{userId}/recurringTransactions/{recurringTransactionId}",
         "definition": {
-          "entityName": "Subcategory",
+          "entityName": "RecurringTransaction",
           "schema": {
-            "$ref": "#/backend/entities/Subcategory"
+            "$ref": "#/backend/entities/RecurringTransaction"
           },
-          "description": "Stores subcategories for each user. Secured by path-based ownership: only the user can access their subcategories.",
+          "description": "Stores recurring transaction data for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the subcategory."
+              "description": "The Firebase Auth UID of the user."
             },
             {
-              "name": "subcategoryId",
-              "description": "The ID of the subcategory."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/accounts/{accountId}",
-        "definition": {
-          "entityName": "Account",
-          "schema": {
-            "$ref": "#/backend/entities/Account"
-          },
-          "description": "Stores accounts for each user. Secured by path-based ownership: only the user can access their accounts.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the account."
-            },
-            {
-              "name": "accountId",
-              "description": "The ID of the account."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/attachments/{attachmentId}",
-        "definition": {
-          "entityName": "Attachment",
-          "schema": {
-            "$ref": "#/backend/entities/Attachment"
-          },
-          "description": "Stores attachments for each user. Secured by path-based ownership: only the user can access their attachments.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the attachment."
-            },
-            {
-              "name": "attachmentId",
-              "description": "The ID of the attachment."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/tags/{tagId}",
-        "definition": {
-          "entityName": "Tag",
-          "schema": {
-            "$ref": "#/backend/entities/Tag"
-          },
-          "description": "Stores tags for each user. Secured by path-based ownership: only the user can access their tags.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user who owns the tag."
-            },
-            {
-              "name": "tagId",
-              "description": "The ID of the tag."
+              "name": "recurringTransactionId",
+              "description": "The unique identifier for the recurring transaction."
             }
           ]
         }
@@ -487,35 +457,39 @@
           "schema": {
             "$ref": "#/backend/entities/CreditCard"
           },
-          "description": "Stores credit cards for each user. Secured by path-based ownership: only the user can access their credit cards.",
+          "description": "Stores credit card data for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the credit card."
+              "description": "The Firebase Auth UID of the user."
             },
             {
               "name": "creditCardId",
-              "description": "The ID of the credit card."
+              "description": "The unique identifier for the credit card."
             }
           ]
         }
       },
       {
-        "path": "/users/{userId}/installments/{installmentId}",
+        "path": "/users/{userId}/transactions/{transactionId}/installments/{installmentId}",
         "definition": {
           "entityName": "Installment",
           "schema": {
             "$ref": "#/backend/entities/Installment"
           },
-          "description": "Stores installments for each user. Secured by path-based ownership: only the user can access their installments.",
+          "description": "Stores installment data for a specific transaction.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the installment."
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier for the transaction."
             },
             {
               "name": "installmentId",
-              "description": "The ID of the installment."
+              "description": "The unique identifier for the installment."
             }
           ]
         }
@@ -527,15 +501,15 @@
           "schema": {
             "$ref": "#/backend/entities/Budget"
           },
-          "description": "Stores budgets for each user. Secured by path-based ownership: only the user can access their budgets.",
+          "description": "Stores budget data for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the budget."
+              "description": "The Firebase Auth UID of the user."
             },
             {
               "name": "budgetId",
-              "description": "The ID of the budget."
+              "description": "The unique identifier for the budget."
             }
           ]
         }
@@ -547,21 +521,40 @@
           "schema": {
             "$ref": "#/backend/entities/FinancialGoal"
           },
-          "description": "Stores financial goals for each user. Secured by path-based ownership: only the user can access their financial goals.",
+          "description": "Stores financial goal data for a specific user.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the user who owns the financial goal."
+              "description": "The Firebase Auth UID of the user."
             },
             {
               "name": "financialGoalId",
-              "description": "The ID of the financial goal."
+              "description": "The unique identifier for the financial goal."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tags/{tagId}",
+        "definition": {
+          "entityName": "Tag",
+          "schema": {
+            "$ref": "#/backend/entities/Tag"
+          },
+          "description": "Stores tag data for a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "tagId",
+              "description": "The unique identifier for the tag."
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable, adhering to the core design principles. It prioritizes Authorization Independence by denormalizing authorization data, ensures Clarity of Intent by making authorization logic explicit, and avoids custom claims by storing roles in the database (DBAC). The structure also supports secure `list` operations (QAPs) through structural segregation and membership models, and maintains data integrity through invariants. The error \"Firebase: Error (auth/operation-not-allowed)\" suggests an issue with authentication configuration, ensure sign-in methods are enabled in Firebase console. The data structure facilitates scalable and robust security rules.\n\nAuthorization Independence is achieved by avoiding hierarchical authorization dependencies. All authorization information needed to validate a request is present within the document itself, or can be derived from the path, eliminating the need for `get()` calls in security rules. This is achieved through path-based ownership and membership maps. For example, the transactions subcollection relies on path based ownership `users/{userId}/transactions/{transactionId}` so the security rules are simplified to checking `request.auth.uid == userId`.\n\nQAPs (Rules are not Filters) are supported by segregating data based on access needs and using membership models where appropriate. Path based ownership is used for private user data, meaning only the user can access their own transactions, categories, subcategories, accounts, attachments, tags, credit cards, installments, budgets, and financial goals. Thus list operations are secure and efficient."
+    "reasoning": "The Firestore structure is designed to ensure Authorization Independence, DBAC, and support secure list operations (QAPs). User-owned data is structured under `/users/{userId}`. Authorization independence is achieved by avoiding `get()` calls in security rules. For instance, data like `transactions`, `categories`, and `budgets` are nested under the user's document, ensuring that access control can be based solely on the `request.auth.uid` and the path. Collaborative data is not present in this app.\n\nQAPs are supported through structural segregation. Each collection under `/users/{userId}` contains data with a homogeneous security posture, allowing straightforward security rules that don't filter data based on document content. Path-based ownership (`/users/{userId}/transactions/{transactionId}`) simplifies list operations, as rules can easily grant access to all documents under a user's path. The `UserAccount` document itself contains essential user data, and subcollections under each user hold their respective transactions, categories, budgets, credit cards, financial goals and tags."
   }
 }
-    
