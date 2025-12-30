@@ -10,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 import { CategoryChart } from '@/components/charts/CategoryChart';
 import { getIconComponent } from '@/lib/data.tsx';
+import { MonthlyOverviewChart, type MonthlyData } from '@/components/charts/MonthlyOverviewChart';
+import { subMonths, format, getMonth, getYear } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function ReportsPage() {
     const { user } = useUser();
@@ -69,6 +72,47 @@ export default function ReportsPage() {
         };
     }, [transactions, categories]);
     
+    const monthlyData: MonthlyData[] = useMemo(() => {
+        const data: MonthlyData[] = [];
+        const today = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const date = subMonths(today, i);
+            const monthName = format(date, 'MMM', { locale: ptBR });
+            
+            data.push({
+                month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+                income: 0,
+                expenses: 0,
+            });
+        }
+        
+        if (transactions) {
+            transactions.forEach(transaction => {
+                const transactionDate = new Date(transaction.date);
+                const transactionMonth = getMonth(transactionDate);
+                const transactionYear = getYear(transactionDate);
+
+                for (let i = 5; i >= 0; i--) {
+                    const date = subMonths(today, i);
+                    const month = getMonth(date);
+                    const year = getYear(date);
+                    
+                    if (transactionMonth === month && transactionYear === year) {
+                        const monthIndex = 5 - i;
+                        if (transaction.type === 'income') {
+                            data[monthIndex].income += transaction.amount;
+                        } else {
+                            data[monthIndex].expenses += transaction.amount;
+                        }
+                    }
+                }
+            });
+        }
+
+        return data;
+    }, [transactions]);
+    
     if (transactionsLoading || categoriesLoading) {
         return (
             <>
@@ -83,7 +127,18 @@ export default function ReportsPage() {
   return (
     <>
       <Header title="Relatórios" />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
+        <Card>
+            <CardHeader>
+                <CardTitle>Evolução Financeira</CardTitle>
+                <CardDescription>Receitas vs. Despesas nos últimos 6 meses.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[400px]">
+                    <MonthlyOverviewChart data={monthlyData} />
+                </div>
+            </CardContent>
+        </Card>
         <Card>
             <CardHeader>
                 <CardTitle>Despesas por Categoria</CardTitle>

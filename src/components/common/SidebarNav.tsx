@@ -62,7 +62,6 @@ const secondaryMenuItems = [
 
 const dataMenuItems = [
   { href: "/reports", label: "Relatórios", icon: PieChart },
-  { href: "/performance", label: "Desempenho", icon: BarChart },
 ];
 
 const organizationMenuItems = [
