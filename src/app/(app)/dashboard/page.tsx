@@ -47,7 +47,7 @@ export default function DashboardPage() {
   , [firestore, user]);
 
   const goalsQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'financialGoals')) : null
+    user ? query(collection(firestore, 'users', user.uid, 'financialGoals')) : null
   , [firestore, user]);
 
   const categoriesQuery = useMemoFirebase(() =>
