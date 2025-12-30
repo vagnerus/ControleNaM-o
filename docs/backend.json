@@ -1,0 +1,536 @@
+{
+  "entities": {
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a financial transaction, either an expense or income.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Transaction entity."
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "The date when the transaction occurred.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction. Positive for income, negative for expense."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the transaction."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Transaction)"
+        },
+        "subcategoryId": {
+          "type": "string",
+          "description": "Reference to Subcategory. (Relationship: Subcategory 1:N Transaction)"
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Reference to Account. (Relationship: Account 1:N Transaction)"
+        },
+        "attachmentIds": {
+          "type": "array",
+          "description": "References to Attachments. (Relationship: Attachment 1:N Transaction)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "References to Tags. (Relationship: Tag N:N Transaction)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isRecurring": {
+          "type": "boolean",
+          "description": "Indicates if the transaction is recurring."
+        },
+        "creditCardId": {
+          "type": "string",
+          "description": "Reference to CreditCard. (Relationship: CreditCard 1:N Transaction)  Null if not a credit card transaction."
+        },
+        "installmentNumber": {
+          "type": "number",
+          "description": "The installment number for the transaction. Null if not an installment."
+        },
+        "totalInstallments": {
+          "type": "number",
+          "description": "Total installments for the transaction. Null if not an installment."
+        }
+      },
+      "required": [
+        "id",
+        "transactionDate",
+        "amount",
+        "description",
+        "categoryId",
+        "accountId"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category for classifying transactions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the category."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the category."
+        },
+        "isIncome": {
+          "type": "boolean",
+          "description": "Indicates if the category is for income or expenses."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "isIncome"
+      ]
+    },
+    "Subcategory": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subcategory",
+      "type": "object",
+      "description": "Represents a subcategory for further classifying transactions within a category.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Subcategory entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the subcategory."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the subcategory."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Subcategory)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "categoryId"
+      ]
+    },
+    "Account": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Account",
+      "type": "object",
+      "description": "Represents a bank account or cash account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Account entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the account."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the account."
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the account."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "balance"
+      ]
+    },
+    "Attachment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attachment",
+      "type": "object",
+      "description": "Represents an attachment for a transaction (e.g., a receipt image).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Attachment entity."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The name of the file."
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The type of the file (e.g., image/jpeg)."
+        },
+        "fileSize": {
+          "type": "number",
+          "description": "The size of the file in bytes."
+        },
+        "fileData": {
+          "type": "string",
+          "description": "The file data encoded as a base64 string.",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fileName",
+        "fileType",
+        "fileSize",
+        "fileData"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Represents a tag for grouping transactions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tag entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the tag."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "CreditCard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CreditCard",
+      "type": "object",
+      "description": "Represents a credit card.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CreditCard entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the credit card."
+        },
+        "cardNumber": {
+          "type": "string",
+          "description": "The credit card number.  Consider encrypting this field.",
+          "format": "string"
+        },
+        "closingDate": {
+          "type": "number",
+          "description": "The day of the month when the credit card bill closes."
+        },
+        "dueDate": {
+          "type": "number",
+          "description": "The day of the month when the credit card bill is due."
+        },
+        "creditLimit": {
+          "type": "number",
+          "description": "The credit limit of the card."
+        },
+        "availableLimit": {
+          "type": "number",
+          "description": "The available credit limit on the card."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "closingDate",
+        "dueDate",
+        "creditLimit",
+        "availableLimit"
+      ]
+    },
+    "Budget": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Budget",
+      "type": "object",
+      "description": "Represents a budget for a category.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Budget entity."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Budget)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The budgeted amount for the category."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date for the budget.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date for the budget.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "amount",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "FinancialGoal": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialGoal",
+      "type": "object",
+      "description": "Represents a financial goal.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FinancialGoal entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the financial goal."
+        },
+        "targetAmount": {
+          "type": "number",
+          "description": "The target amount for the financial goal."
+        },
+        "currentAmount": {
+          "type": "number",
+          "description": "The current amount saved towards the goal."
+        },
+        "monthlyContribution": {
+          "type": "number",
+          "description": "The monthly contribution towards the goal."
+        },
+        "targetDate": {
+          "type": "string",
+          "description": "The target date for achieving the goal.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "targetAmount",
+        "currentAmount",
+        "monthlyContribution",
+        "targetDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores financial transactions for a user. Each transaction includes details such as amount, date, description, category, and account. Includes denormalized data from Category and Account for authorization independence and faster querying.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the transaction."
+            },
+            {
+              "name": "transactionId",
+              "description": "The ID of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores categories for classifying transactions. Each category includes a name, description, and indication of whether it is for income or expenses.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the category."
+            },
+            {
+              "name": "categoryId",
+              "description": "The ID of the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/subcategories/{subcategoryId}",
+        "definition": {
+          "entityName": "Subcategory",
+          "schema": {
+            "$ref": "#/backend/entities/Subcategory"
+          },
+          "description": "Stores subcategories for further classifying transactions within a category. Each subcategory includes a name and a reference to its parent category.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the subcategory."
+            },
+            {
+              "name": "subcategoryId",
+              "description": "The ID of the subcategory."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/accounts/{accountId}",
+        "definition": {
+          "entityName": "Account",
+          "schema": {
+            "$ref": "#/backend/entities/Account"
+          },
+          "description": "Stores bank accounts or cash accounts for a user. Each account includes a name, description, and current balance.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the account."
+            },
+            {
+              "name": "accountId",
+              "description": "The ID of the account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/attachments/{attachmentId}",
+        "definition": {
+          "entityName": "Attachment",
+          "schema": {
+            "$ref": "#/backend/entities/Attachment"
+          },
+          "description": "Stores attachments for transactions, such as receipt images. Each attachment includes a file name, file type, file size, and file data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the attachment."
+            },
+            {
+              "name": "attachmentId",
+              "description": "The ID of the attachment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tags/{tagId}",
+        "definition": {
+          "entityName": "Tag",
+          "schema": {
+            "$ref": "#/backend/entities/Tag"
+          },
+          "description": "Stores tags for grouping transactions. Each tag includes a name.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the tag."
+            },
+            {
+              "name": "tagId",
+              "description": "The ID of the tag."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/creditCards/{creditCardId}",
+        "definition": {
+          "entityName": "CreditCard",
+          "schema": {
+            "$ref": "#/backend/entities/CreditCard"
+          },
+          "description": "Stores credit cards for a user. Each credit card includes details such as name, card number, closing date, due date, credit limit, and available limit.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the credit card."
+            },
+            {
+              "name": "creditCardId",
+              "description": "The ID of the credit card."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/budgets/{budgetId}",
+        "definition": {
+          "entityName": "Budget",
+          "schema": {
+            "$ref": "#/backend/entities/Budget"
+          },
+          "description": "Stores budgets for a user, related to specific categories. Each budget includes a category ID, amount, start date, and end date.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the budget."
+            },
+            {
+              "name": "budgetId",
+              "description": "The ID of the budget."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/financialGoals/{financialGoalId}",
+        "definition": {
+          "entityName": "FinancialGoal",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialGoal"
+          },
+          "description": "Stores financial goals for a user. Each financial goal includes a name, target amount, current amount, monthly contribution, and target date.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the financial goal."
+            },
+            {
+              "name": "financialGoalId",
+              "description": "The ID of the financial goal."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage financial transactions, categories, accounts, and related data for the 'ControleNaMão' application. The structure emphasizes path-based ownership for private user data and denormalization to ensure authorization independence and efficient querying. This is achieved by storing all user-specific data under the `/users/{userId}` path and avoiding `get()` calls in security rules. The app uses the strategy Access Modeling, standardizing the authorization model through Membership Map (`members: {uid1: \"role\", uid2: \"role\"}`).\n\nAuthorization Independence (CRITICAL): All data is stored under the user's document, which avoids the need to check other collections to authorize the data access. This structure ensures that security rules can be written without relying on parent document data, enabling atomic operations and simplifying debugging. Each user's data is self-contained, so all authorization can be managed solely by using `request.auth.uid`.\n\nQAPs (Rules are not Filters): Segregation is implemented by storing all user-specific data under `/users/{userId}`, ensuring secure list operations. Since all documents in a collection share the same security requirements, rules do not act as filters. The membership model is not applicable here since all data is private and owned by the user.\n\nInvariants: Ownership is maintained through the path-based structure (`/users/{userId}/{collection}/{documentId}`). Timestamps can be managed within each document, and denormalized data, such as category names in transaction documents, can be maintained with Firestore triggers.\n\nExplicit State Modeling: The design encourages the use of a `status` field (e.g., in Transactions) to represent the state of the data explicitly (e.g., `PENDING`, `CLEARED`).\n\nPredictable Schema: Dynamic keys are avoided. Arrays of objects with static keys are preferred to ensure a predictable schema and facilitate easier querying and rule creation.\n"
+  }
+}

@@ -1,0 +1,204 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model. All user-generated
+ * data is considered private and is only accessible by the user who created it. There is
+ * no concept of public data or shared access between users.
+ *
+ * Data Structure: The entire data model is hierarchical, with all user-specific data
+ * nested within subcollections under the `/users/{userId}` path. This structure is the
+ * primary mechanism for enforcing security, as ownership is determined by the path itself,
+ * avoiding the need for complex and slow cross-document reads.
+ *
+ * Key Security Decisions:
+ * - Strict Privacy: All data collections are private to the owner. There are no
+ *   publicly readable top-level collections.
+ * - No User Listing: The top-level `/users` collection is not exposed, preventing any
+ *   actor from enumerating the application's users.
+ * - Default Deny: Access is denied by default. Rules explicitly grant permissions only to
+ *   the authenticated owner of a data path.
+ *
+ * Denormalization for Authorization: This ruleset leverages a path-based security model,
+ * which is a form of structural denormalization. By placing all of a user's content
+ * (transactions, accounts, categories, etc.) within their own document tree
+ * `/users/{userId}/...`, authorization checks become simple, fast, and inexpensive comparisons
+ * of the wildcard `userId` against the authenticated user's UID (`request.auth.uid`). This
+ * completely avoids the need for `get()` calls in rules.
+ *
+ * Structural Segregation: The design uses separate subcollections for each data type
+ * (e.g., `transactions`, `accounts`) under a user's root path. This cleanly segregates
+ * data and ensures that list operations are inherently secure, as a user can only query
+ * collections within their own data tree.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Validates if the currently authenticated user is the owner of the document
+     * based on the `userId` from the path.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * For state-changing operations on existing documents (update, delete),
+     * this ensures the document exists and the requester is the owner.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // ------------------------------------------------------------------------
+    // User Data Collections
+    // ------------------------------------------------------------------------
+
+    match /users/{userId} {
+
+      /**
+       * @description Controls access to user-specific transaction data.
+       * @path /users/{userId}/transactions/{transactionId}
+       * @allow A logged-in user (auth.uid='user123') can (create) their own transaction at `/users/user123/transactions/tx456`.
+       * @deny A different user (auth.uid='user789') is denied from (get)ting a transaction at `/users/user123/transactions/tx456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific category data.
+       * @path /users/{userId}/categories/{categoryId}
+       * @allow A logged-in user (auth.uid='user123') can (list) their own categories at `/users/user123/categories`.
+       * @deny A different user (auth.uid='user789') is denied from (update)ing a category at `/users/user123/categories/cat456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /categories/{categoryId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific subcategory data.
+       * @path /users/{userId}/subcategories/{subcategoryId}
+       * @allow A logged-in user (auth.uid='user123') can (delete) their own subcategory at `/users/user123/subcategories/sub456`.
+       * @deny An unauthenticated user is denied from (get)ting a subcategory at `/users/user123/subcategories/sub456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /subcategories/{subcategoryId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific account data.
+       * @path /users/{userId}/accounts/{accountId}
+       * @allow A logged-in user (auth.uid='user123') can (create) their own account at `/users/user123/accounts/acc456`.
+       * @deny A different user (auth.uid='user789') is denied from (delete)ing an account at `/users/user123/accounts/acc456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /accounts/{accountId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific transaction attachments.
+       * @path /users/{userId}/attachments/{attachmentId}
+       * @allow A logged-in user (auth.uid='user123') can (get) their own attachment at `/users/user123/attachments/att456`.
+       * @deny A different user (auth.uid='user789') is denied from (list)ing attachments at `/users/user123/attachments`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /attachments/{attachmentId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific tags.
+       * @path /users/{userId}/tags/{tagId}
+       * @allow A logged-in user (auth.uid='user123') can (create) their own tag at `/users/user123/tags/tag456`.
+       * @deny A different user (auth.uid='user789') is denied from (update)ing a tag at `/users/user123/tags/tag456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /tags/{tagId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific credit card data.
+       * @path /users/{userId}/creditCards/{creditCardId}
+       * @allow A logged-in user (auth.uid='user123') can (list) their own credit cards at `/users/user123/creditCards`.
+       * @deny An unauthenticated user is denied from (get)ting a credit card at `/users/user123/creditCards/cc456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /creditCards/{creditCardId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific budget data.
+       * @path /users/{userId}/budgets/{budgetId}
+       * @allow A logged-in user (auth.uid='user123') can (create) their own budget at `/users/user123/budgets/bud456`.
+       * @deny A different user (auth.uid='user789') is denied from (get)ting a budget at `/users/user123/budgets/bud456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /budgets/{budgetId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Controls access to user-specific financial goal data.
+       * @path /users/{userId}/financialGoals/{financialGoalId}
+       * @allow A logged-in user (auth.uid='user123') can (update) their own financial goal at `/users/user123/financialGoals/goal456`.
+       * @deny A different user (auth.uid='user789') is denied from (delete)ing a financial goal at `/users/user123/financialGoals/goal456`.
+       * @principle Restricts access to a user's own data tree.
+       */
+      match /financialGoals/{financialGoalId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}
