@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -26,6 +27,7 @@ import {
   FileDown,
   PieChart,
   GanttChart,
+  Repeat,
 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -55,6 +57,7 @@ const secondaryMenuItems = [
   { href: "/budgets", label: "Planejamento", icon: GanttChart },
   { href: "/goals", label: "Objetivos", icon: Target },
   { href: "/calendar", label: "Calendário", icon: Calendar },
+  { href: "/recurring-transactions", label: "Recorrências", icon: Repeat },
 ];
 
 const dataMenuItems = [

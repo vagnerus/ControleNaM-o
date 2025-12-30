@@ -56,3 +56,28 @@ export type Tag = {
     id: string;
     name: string;
 };
+
+export type RecurringTransaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'income' | 'expense';
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  startDate: string; // ISO string
+  endDate?: string; // ISO string
+  categoryId: string;
+  accountId: string;
+  categoryName?: string; // Denormalized for display
+  accountName?: string; // Denormalized for display
+};
+
+export type Installment = {
+    id: string;
+    transactionId: string;
+    creditCardId: string;
+    installmentNumber: number;
+    totalInstallments: number;
+    amount: number;
+    dueDate: string; // ISO string
+    isPaid: boolean;
+};

@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import React from 'react';
-import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Tag } from '@/lib/types';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Tag, RecurringTransaction } from '@/lib/types';
 import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -438,5 +439,50 @@ export const deleteTag = async (firestore: Firestore, userId: string, tagId: str
   return deleteDoc(tagDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'delete' }));
     throw error; // Re-throw to be caught in the component
+  });
+};
+
+// Recurring Transaction Functions
+export const saveRecurringTransaction = (
+  firestore: Firestore,
+  userId: string,
+  recurringData: Omit<RecurringTransaction, 'id'>,
+  recurringId?: string
+) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const recurringCollection = collection(firestore, 'users', userId, 'recurringTransactions');
+
+  if (recurringId) {
+    const recurringDoc = doc(firestore, 'users', userId, 'recurringTransactions', recurringId);
+    return updateDoc(recurringDoc, recurringData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: recurringDoc.path,
+        operation: 'update',
+        requestResourceData: recurringData,
+      }));
+    });
+  } else {
+    return addDoc(recurringCollection, recurringData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: recurringCollection.path,
+        operation: 'create',
+        requestResourceData: recurringData,
+      }));
+    });
+  }
+};
+
+export const deleteRecurringTransaction = (
+  firestore: Firestore,
+  userId: string,
+  recurringId: string
+) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const recurringDoc = doc(firestore, 'users', userId, 'recurringTransactions', recurringId);
+  return deleteDoc(recurringDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+      path: recurringDoc.path,
+      operation: 'delete',
+    }));
   });
 };
