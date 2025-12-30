@@ -21,9 +21,24 @@ import {
   CircleHelp,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const menuItems = [
-  { href: "/", label: "Painel", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { href: "/transactions", label: "Transações", icon: ArrowRightLeft },
   { href: "/budgets", label: "Orçamentos", icon: PieChart },
   { href: "/goals", label: "Objetivos", icon: Target },
@@ -32,6 +47,26 @@ const menuItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Você saiu!",
+        description: "Até a próxima.",
+      });
+      // AuthGate will handle the redirect
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao sair",
+        description: "Não foi possível fazer o logout. Tente novamente.",
+      });
+    }
+  };
+
 
   return (
     <>
@@ -54,11 +89,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
-                  isActive={
-                    item.href === "/"
-                      ? pathname === item.href
-                      : pathname.startsWith(item.href)
-                  }
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={item.label}
                 >
                   <item.icon />
@@ -84,10 +115,26 @@ export function SidebarNav() {
                 </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Sair">
-                    <LogOut />
-                    <span>Sair</span>
-                </SidebarMenuButton>
+               <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <SidebarMenuButton tooltip="Sair">
+                        <LogOut />
+                        <span>Sair</span>
+                    </SidebarMenuButton>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Você tem certeza que quer sair?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Você será desconectado da sua conta e precisará fazer login novamente.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSignOut}>Sair</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
             </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

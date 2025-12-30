@@ -17,6 +17,9 @@ import {
 import type { Budget, Category, CreditCard, FinancialGoal, Transaction } from '@/lib/types';
 import { getPlaceholderImage } from './placeholder-images';
 
+// This is now mock data. In a real application, this would come from a database.
+// We will replace this with Firestore later.
+
 const categories: Category[] = [
   { id: 'cat_1', name: 'Alimentação', icon: Utensils, type: 'expense' },
   { id: 'cat_2', name: 'Transporte', icon: Car, type: 'expense' },
