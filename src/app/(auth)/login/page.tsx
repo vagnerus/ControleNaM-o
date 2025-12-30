@@ -41,8 +41,8 @@ export default function LoginPage() {
         </p>
         <div className="mt-8 grid grid-cols-2 gap-6 max-w-lg">
             {features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-background">
+                <div key={index} className="flex items-start gap-4 text-left">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-background">
                         {feature.icon}
                     </div>
                     <div>
@@ -55,6 +55,14 @@ export default function LoginPage() {
       </div>
       <div className="flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
+            <div className="text-center lg:hidden">
+                 <div className="flex items-center justify-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                        <Wallet className="h-7 w-7" />
+                    </div>
+                    <h1 className="text-3xl font-bold text-foreground">ControleNaMão</h1>
+                </div>
+            </div>
             <div className="text-center">
                 <h2 className="text-3xl font-bold tracking-tight">Acesse sua conta</h2>
                 <p className="mt-2 text-muted-foreground">
