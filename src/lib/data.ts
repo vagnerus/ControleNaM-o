@@ -16,8 +16,8 @@ import {
   Receipt,
   Wallet,
 } from 'lucide-react';
-import type { Category, Transaction, CreditCard, Account } from '@/lib/types';
-import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment } from 'firebase/firestore';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal } from '@/lib/types';
+import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { addMonths } from 'date-fns';
@@ -96,8 +96,8 @@ export const addTransaction = (
     };
     
     runTransaction(firestore, async (tx) => {
-        // Create the transaction document
-        tx.set(doc(transactionsCollection), newTransaction);
+        const newTransactionRef = doc(transactionsCollection);
+        tx.set(newTransactionRef, newTransaction);
 
         // Update account balance only if it's not a credit card transaction
         if (!creditCardId) {
@@ -216,4 +216,59 @@ export const deleteAccount = (
         })
       );
     });
+};
+
+
+// Budget Functions
+export const saveBudget = (firestore: Firestore, userId: string, budgetData: Omit<Budget, 'id'>, budgetId?: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const budgetsCollection = collection(firestore, 'users', userId, 'budgets');
+  
+  if (budgetId) {
+    // Update existing budget
+    const budgetDoc = doc(firestore, 'users', userId, 'budgets', budgetId);
+    updateDoc(budgetDoc, budgetData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetDoc.path, operation: 'update', requestResourceData: budgetData }));
+    });
+  } else {
+    // Add new budget
+    addDoc(budgetsCollection, budgetData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetsCollection.path, operation: 'create', requestResourceData: budgetData }));
+    });
+  }
+};
+
+export const deleteBudget = (firestore: Firestore, userId: string, budgetId: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const budgetDoc = doc(firestore, 'users', userId, 'budgets', budgetId);
+  deleteDoc(budgetDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetDoc.path, operation: 'delete' }));
+  });
+};
+
+// Financial Goal Functions
+export const saveGoal = (firestore: Firestore, userId: string, goalData: Omit<FinancialGoal, 'id'>, goalId?: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const goalsCollection = collection(firestore, 'users', userId, 'financialGoals');
+
+  if (goalId) {
+    // Update existing goal
+    const goalDoc = doc(firestore, 'users', userId, 'financialGoals', goalId);
+    updateDoc(goalDoc, goalData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'update', requestResourceData: goalData }));
+    });
+  } else {
+    // Add new goal
+    addDoc(goalsCollection, goalData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalsCollection.path, operation: 'create', requestResourceData: goalData }));
+    });
+  }
+};
+
+export const deleteGoal = (firestore: Firestore, userId: string, goalId: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const goalDoc = doc(firestore, 'users', userId, 'financialGoals', goalId);
+  deleteDoc(goalDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'delete' }));
+  });
 };

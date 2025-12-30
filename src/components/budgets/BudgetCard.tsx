@@ -1,9 +1,31 @@
-import { getCategoryByName } from "@/lib/data";
+import { getCategoryByName, deleteBudget } from "@/lib/data";
 import type { Budget, Transaction } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { MoreVertical, Edit, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "../ui/button";
+import { useFirestore, useUser } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { AddBudgetDialog } from "./AddBudgetDialog";
 
 type BudgetCardProps = {
   budget: Budget;
@@ -12,6 +34,11 @@ type BudgetCardProps = {
 };
 
 export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCardProps) {
+  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const category = getCategoryByName(budget.category);
 
   const spent = useMemo(() => {
@@ -39,6 +66,16 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
 
   const progressColor =
     percentage > 90 ? "bg-destructive" : percentage > 75 ? "bg-warning" : "bg-primary";
+    
+  const handleDelete = () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado.' });
+      return;
+    }
+    deleteBudget(firestore, user.uid, budget.id);
+    toast({ title: 'Sucesso', description: 'Orçamento removido.' });
+  };
+
 
   if (isCompact) {
     return (
@@ -57,11 +94,59 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          {category?.icon && <category.icon className="h-6 w-6" />}
-          <span>{budget.category}</span>
-        </CardTitle>
+      <CardHeader className="flex-row items-start justify-between">
+        <div className="flex items-center gap-3">
+          {category?.icon && (
+            <div className="p-3 rounded-lg bg-primary/10 text-primary">
+                <category.icon className="h-6 w-6" />
+            </div>
+          )}
+          <div>
+            <CardTitle>{budget.category}</CardTitle>
+            <p className="text-sm text-muted-foreground">Orçamento Mensal</p>
+          </div>
+        </div>
+        <AlertDialog>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                    </DropdownMenuItem>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                        </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                        seu orçamento para esta categoria.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Excluir
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <AddBudgetDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            budget={budget}
+        />
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="flex justify-between text-muted-foreground text-sm">

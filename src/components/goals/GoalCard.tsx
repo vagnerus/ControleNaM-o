@@ -3,12 +3,41 @@ import { getPlaceholderImage } from "@/lib/placeholder-images";
 import Image from "next/image";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
+import { useFirestore, useUser } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { deleteGoal } from "@/lib/data";
+import { Edit, MoreVertical, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "../ui/button";
+import { AddGoalDialog } from "./AddGoalDialog";
 
 type GoalCardProps = {
   goal: FinancialGoal;
 };
 
 export function GoalCard({ goal }: GoalCardProps) {
+  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const image = getPlaceholderImage(goal.imageId);
   const percentage = (goal.currentAmount / goal.targetAmount) * 100;
   
@@ -18,20 +47,69 @@ export function GoalCard({ goal }: GoalCardProps) {
       currency: "BRL",
     }).format(value);
 
+  const handleDelete = () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado.' });
+        return;
+    }
+    deleteGoal(firestore, user.uid, goal.id);
+    toast({ title: 'Sucesso', description: 'Objetivo removido.' });
+  }
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="p-0">
-        {image && (
-          <div className="relative aspect-[3/2] w-full">
-            <Image
-              src={image.imageUrl}
-              alt={image.description}
-              fill
-              className="object-cover rounded-t-lg"
-              data-ai-hint={image.imageHint}
-            />
-          </div>
-        )}
+        <div className="relative">
+            {image && (
+                <div className="relative aspect-[3/2] w-full">
+                    <Image
+                    src={image.imageUrl}
+                    alt={image.description}
+                    fill
+                    className="object-cover rounded-t-lg"
+                    data-ai-hint={image.imageHint}
+                    />
+                </div>
+            )}
+            <div className="absolute top-2 right-2">
+                 <AlertDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                            </DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Excluir
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                                seu objetivo financeiro.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                Excluir
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
         <div className="p-6 pb-0">
             <CardTitle>{goal.name}</CardTitle>
         </div>
@@ -49,6 +127,11 @@ export function GoalCard({ goal }: GoalCardProps) {
             Meta de economia: <span className="font-semibold text-primary">{formatCurrency(goal.monthlySaving)}/mês</span>
         </p>
       </CardFooter>
+      <AddGoalDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          goal={goal}
+      />
     </Card>
   );
 }

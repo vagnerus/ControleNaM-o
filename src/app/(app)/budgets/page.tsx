@@ -9,6 +9,8 @@ import { Header } from "@/components/common/Header";
 import { BudgetCard } from "@/components/budgets/BudgetCard";
 import { AIForecast } from "@/components/budgets/AIForecast";
 import { Loader2 } from 'lucide-react';
+import { AddBudgetDialog } from '@/components/budgets/AddBudgetDialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function BudgetsPage() {
     const { user } = useUser();
@@ -66,7 +68,9 @@ export default function BudgetsPage() {
     if (isLoading) {
         return (
             <>
-                <Header title="Orçamentos" />
+                <Header title="Orçamentos" >
+                    <AddBudgetDialog />
+                </Header>
                 <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 </div>
@@ -76,14 +80,29 @@ export default function BudgetsPage() {
 
     return (
         <>
-            <Header title="Orçamentos" />
+            <Header title="Orçamentos">
+                <AddBudgetDialog />
+            </Header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
                 <AIForecast data={budgetDataForAI} />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(budgets || []).map(budget => (
-                        <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} />
-                    ))}
-                </div>
+
+                 {(budgets || []).length === 0 ? (
+                    <Card className="flex flex-col items-center justify-center h-96 border-dashed">
+                        <CardHeader className="text-center">
+                        <CardTitle>Nenhum orçamento encontrado</CardTitle>
+                        <CardDescription>Crie seu primeiro orçamento para começar a planejar.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AddBudgetDialog />
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {(budgets || []).map(budget => (
+                            <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} />
+                        ))}
+                    </div>
+                )}
             </main>
         </>
     );
