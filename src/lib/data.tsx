@@ -78,42 +78,21 @@ export const saveTransaction = (
     throw new Error('User must be authenticated.');
   }
 
-  // If it's a new, installment-based purchase, create installments
-  if (transactionData.isInstallment && transactionData.totalInstallments && transactionData.totalInstallments > 1 && transactionData.creditCardId && !transactionId) {
-    return runTransaction(firestore, async (tx) => {
-      const purchaseAmount = transactionData.amount;
-      const installmentAmount = parseFloat((purchaseAmount / transactionData.totalInstallments!).toFixed(2));
-      const purchaseDate = new Date(transactionData.date);
-
-      // Create a reference for the original purchase transaction for linking
-      const purchaseTransactionRef = doc(collection(firestore, 'users', userId, 'transactions'));
-      
-      // 2. Create individual installment transactions
-      for (let i = 1; i <= transactionData.totalInstallments!; i++) {
-        // The first installment is on the purchase date, subsequent ones are in following months
-        const installmentDate = addMonths(purchaseDate, i - 1);
-        const installmentRef = doc(collection(firestore, 'users', userId, 'transactions'));
-        tx.set(installmentRef, {
-          ...transactionData,
-          amount: installmentAmount,
-          date: installmentDate.toISOString(),
-          description: `${transactionData.description} (${i}/${transactionData.totalInstallments})`,
-          isInstallment: true,
-          totalInstallments: transactionData.totalInstallments,
-          originalPurchaseId: purchaseTransactionRef.id, // Link to the original (virtual) purchase
-        });
-      }
-    }).catch(error => {
+  // This is a simplified logic. For new installment purchases, it just saves the main transaction.
+  // The client-side logic on the credit card statement page will handle projecting the installments.
+  if (transactionData.isInstallment && !transactionId) {
+    // Just save the main purchase transaction. The amount should be the total purchase amount.
+    const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
+    return addDoc(transactionsCollection, { ...transactionData, date: transactionData.date.toString() }).catch(error => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${userId}/transactions`,
+            path: transactionsCollection.path,
             operation: 'create',
             requestResourceData: transactionData,
         }));
     });
   }
 
-
-  // Logic for regular transactions or updating existing transactions
+  // Logic for regular (non-installment) transactions or updating existing transactions.
   return runTransaction(firestore, async (tx) => {
     const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
     const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
@@ -126,7 +105,7 @@ export const saveTransaction = (
         }
     }
     
-    // Do not adjust balance for any credit card transactions
+    // Do not adjust account balance for any credit card transactions
     if (transactionData.creditCardId) {
         tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
         return;
@@ -171,8 +150,8 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
         }
         const transaction = transactionSnapshot.data() as Transaction;
         
-        // Only adjust balance if it's not a credit card transaction
-        if (!transaction.creditCardId) {
+        // Only adjust balance if it's not a credit card transaction and not an installment purchase
+        if (!transaction.creditCardId && !transaction.isInstallment) {
             const accountRef = doc(firestore, 'users', userId, 'accounts', transaction.accountId);
             const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
             tx.update(accountRef, { balance: increment(balanceChange) });

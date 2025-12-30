@@ -10,7 +10,7 @@ import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { Button } from '@/components/ui/button';
-import { format, subMonths, addMonths, startOfMonth, endOfMonth, setDate, isAfter, isBefore } from 'date-fns';
+import { format, subMonths, addMonths, startOfMonth, endOfMonth, setDate, isAfter, isBefore, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BrandIcon } from '@/components/cards/BrandIcon';
 
@@ -25,11 +25,11 @@ export default function CardStatementPage({ params }: { params: { cardId: string
 
   const { data: card, isLoading: cardLoading } = useDoc<CreditCard>(cardRef);
   
+  // Fetch all transactions, including installment purchases
   const transactionsQuery = useMemoFirebase(() => 
     user ? query(
         collection(firestore, 'users', user.uid, 'transactions'), 
-        where('creditCardId', '==', params.cardId),
-        orderBy('date', 'desc')
+        where('creditCardId', '==', params.cardId)
     ) : null
   , [firestore, user, params.cardId]);
 
@@ -47,21 +47,49 @@ export default function CardStatementPage({ params }: { params: { cardId: string
   const { statementTransactions, statementTotal, statementPeriod } = useMemo(() => {
     if (!card || !transactions) return { statementTransactions: [], statementTotal: 0, statementPeriod: { start: '', end: '' } };
 
+    // Define the statement period based on the card's closing date and the currently viewed month
     const closingDay = card.closingDate;
-    
     const currentStatementEnd = setDate(currentMonth, closingDay);
     const prevMonth = subMonths(currentMonth, 1);
     const currentStatementStart = setDate(prevMonth, closingDay + 1);
 
-    const filtered = transactions.filter(t => {
-      const tDate = new Date(t.date);
-      return isAfter(tDate, currentStatementStart) && isBefore(tDate, currentStatementEnd);
+    const statementInterval = { start: currentStatementStart, end: currentStatementEnd };
+
+    const transactionsInStatement: Transaction[] = [];
+
+    transactions.forEach(t => {
+      const transactionDate = new Date(t.date);
+
+      if (t.isInstallment && t.totalInstallments) {
+        // It's an installment purchase, project its installments
+        const installmentAmount = parseFloat((t.amount / t.totalInstallments).toFixed(2));
+        for (let i = 0; i < t.totalInstallments; i++) {
+          const installmentDate = addMonths(transactionDate, i);
+          
+          if (isWithinInterval(installmentDate, statementInterval)) {
+            transactionsInStatement.push({
+              ...t,
+              id: `${t.id}-installment-${i + 1}`, // Create a unique ID for the virtual installment
+              amount: installmentAmount,
+              date: installmentDate.toISOString(),
+              description: `${t.description} (${i + 1}/${t.totalInstallments})`,
+            });
+          }
+        }
+      } else if (!t.isInstallment) {
+        // It's a regular, single-payment transaction
+        if (isWithinInterval(transactionDate, statementInterval)) {
+          transactionsInStatement.push(t);
+        }
+      }
     });
 
-    const total = filtered.reduce((acc, t) => acc + t.amount, 0);
+    // Sort the final list of transactions by date
+    const sortedTransactions = transactionsInStatement.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const total = sortedTransactions.reduce((acc, t) => acc + t.amount, 0);
 
     return {
-      statementTransactions: filtered,
+      statementTransactions: sortedTransactions,
       statementTotal: total,
       statementPeriod: {
           start: format(currentStatementStart, 'dd/MM/yyyy'),
@@ -97,7 +125,7 @@ export default function CardStatementPage({ params }: { params: { cardId: string
   }
 
   const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-  const dueDate = setDate(currentMonth, card.dueDate);
+  const dueDate = setDate(addMonths(currentMonth, 1), card.dueDate);
 
   return (
     <>
