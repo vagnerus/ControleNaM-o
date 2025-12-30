@@ -5,6 +5,7 @@ import { ChangeEmailForm } from "@/components/settings/ChangeEmailForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ConnectedDevices } from "@/components/settings/ConnectedDevices";
 import { DashboardSettingsForm } from "@/components/settings/DashboardSettingsForm";
+import { NotificationsSettingsForm } from "@/components/settings/NotificationsSettingsForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -38,11 +39,11 @@ export default function SettingsPage() {
           <TabsContent value="dashboard" className="mt-6">
             <DashboardSettingsForm />
           </TabsContent>
-          <TabsContent value="preferences">
+          <TabsContent value="preferences" className="mt-6">
             <PlaceholderTabContent title="Preferências" />
           </TabsContent>
-          <TabsContent value="notifications">
-            <PlaceholderTabContent title="Alertas e notificações" />
+          <TabsContent value="notifications" className="mt-6">
+            <NotificationsSettingsForm />
           </TabsContent>
           <TabsContent value="security" className="mt-6 space-y-8">
             <h2 className="text-xl font-semibold tracking-tight">Informações da conta</h2>
