@@ -13,6 +13,7 @@ export type Transaction = {
   isInstallment?: boolean; // Is this transaction an installment payment?
   totalInstallments?: number; // Total number of installments for a purchase
   originalPurchaseId?: string; // Link to the original purchase transaction for installments
+  isFuture?: boolean; // For projected transactions
 };
 
 export type Category = {
