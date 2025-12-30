@@ -33,7 +33,7 @@ const STATIC_CATEGORIES: Category[] = [
   { id: 'cat_5', name: 'Saúde', icon: Heart, type: 'expense' },
   { id: 'cat_6', name: 'Lazer', icon: Film, type: 'expense' },
   { id: 'cat_7', name: 'Educação', icon: GraduationCap, type: 'expense' },
-  { id 'cat_8', name: 'Viagem', icon: Plane, type: 'expense' },
+  { id: 'cat_8', name: 'Viagem', icon: Plane, type: 'expense' },
   { id: 'cat_9', name: 'Presentes', icon: Gift, type: 'expense' },
   { id: 'cat_10', name: 'Outras Despesas', icon: Receipt, type: 'expense' },
   { id: 'cat_11', name: 'Salário', icon: Briefcase, type: 'income' },
