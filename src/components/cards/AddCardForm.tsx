@@ -21,10 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addCard } from "@/lib/data";
+import { saveCard } from "@/lib/data";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
+import type { CreditCard } from "@/lib/types";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome do cartão é muito curto."),
@@ -39,9 +41,10 @@ const formSchema = z.object({
 
 type AddCardFormProps = {
     onFinished?: () => void;
+    card?: CreditCard;
 };
 
-export function AddCardForm({ onFinished }: AddCardFormProps) {
+export function AddCardForm({ onFinished, card }: AddCardFormProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -54,6 +57,19 @@ export function AddCardForm({ onFinished }: AddCardFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (card) {
+        form.reset({
+            name: card.name,
+            last4: card.last4,
+            closingDate: card.closingDate,
+            dueDate: card.dueDate,
+            limit: card.limit,
+            brand: card.brand,
+        });
+    }
+  }, [card, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({
@@ -65,19 +81,19 @@ export function AddCardForm({ onFinished }: AddCardFormProps) {
     }
 
     try {
-        addCard(firestore, user.uid, values);
+        saveCard(firestore, user.uid, values, card?.id);
         toast({
             title: "Sucesso!",
-            description: "Cartão adicionado com sucesso.",
+            description: card ? "Cartão atualizado com sucesso." : "Cartão adicionado com sucesso.",
         });
         form.reset();
         onFinished?.();
     } catch (error) {
-        console.error("Error adding card:", error);
+        console.error("Error saving card:", error);
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Não foi possível adicionar o cartão.",
+            description: "Não foi possível salvar o cartão.",
         });
     }
   }

@@ -17,7 +17,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal } from '@/lib/types';
-import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
+import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { addMonths } from 'date-fns';
@@ -145,33 +145,38 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
     await batch.commit().catch(error => console.error("Error deleting transaction(s):", error));
 };
 
-export const addCard = (
+export const saveCard = (
   firestore: Firestore,
   userId: string,
-  cardData: Omit<CreditCard, 'id' | 'spent' | 'transactions'>
+  cardData: Omit<CreditCard, 'id'>,
+  cardId?: string
 ) => {
   if (!userId) {
-    throw new Error('User must be authenticated to add a card.');
+    throw new Error('User must be authenticated.');
   }
-  const cardsCollection = collection(firestore, 'users', userId, 'creditCards');
-  
-  const newCard: Omit<CreditCard, 'id'> = {
-    ...cardData,
-  };
 
-  addDoc(cardsCollection, newCard)
-    .catch(error => {
-      console.error("Error adding card: ", error);
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: cardsCollection.path,
-          operation: 'create',
-          requestResourceData: newCard,
-        })
-      );
+  if (cardId) {
+    const cardDoc = doc(firestore, 'users', userId, 'creditCards', cardId);
+    setDoc(cardDoc, cardData, { merge: true }).catch(error => {
+      console.error("Error updating card: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: cardDoc.path,
+        operation: 'update',
+        requestResourceData: cardData,
+      }));
     });
-}
+  } else {
+    const cardsCollection = collection(firestore, 'users', userId, 'creditCards');
+    addDoc(cardsCollection, cardData).catch(error => {
+      console.error("Error adding card: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: cardsCollection.path,
+        operation: 'create',
+        requestResourceData: cardData,
+      }));
+    });
+  }
+};
 
 export const deleteCard = (
   firestore: Firestore,
@@ -196,29 +201,41 @@ export const deleteCard = (
     });
 }
 
-export const addAccount = (
+export const saveAccount = (
   firestore: Firestore,
   userId: string,
-  accountData: Omit<Account, 'id'>
+  accountData: Omit<Account, 'id'>,
+  accountId?: string
 ) => {
   if (!userId) {
-    throw new Error('User must be authenticated to add an account.');
+    throw new Error('User must be authenticated.');
   }
-  const accountsCollection = collection(firestore, 'users', userId, 'accounts');
   
-  addDoc(accountsCollection, accountData)
-    .catch(error => {
-      console.error("Error adding account: ", error);
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: accountsCollection.path,
-          operation: 'create',
-          requestResourceData: accountData,
-        })
-      );
+  if (accountId) {
+    const accountDoc = doc(firestore, 'users', userId, 'accounts', accountId);
+    // Be careful with balance updates. This assumes the form provides the *new* total balance.
+    // A more robust solution for balance would be to calculate it based on transactions.
+    setDoc(accountDoc, accountData, { merge: true }).catch(error => {
+      console.error("Error updating account: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: accountDoc.path,
+        operation: 'update',
+        requestResourceData: accountData,
+      }));
     });
+  } else {
+    const accountsCollection = collection(firestore, 'users', userId, 'accounts');
+    addDoc(accountsCollection, accountData).catch(error => {
+      console.error("Error adding account: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: accountsCollection.path,
+        operation: 'create',
+        requestResourceData: accountData,
+      }));
+    });
+  }
 };
+
 
 export const deleteAccount = (
   firestore: Firestore,

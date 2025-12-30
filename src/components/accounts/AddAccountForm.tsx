@@ -14,10 +14,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { addAccount } from "@/lib/data";
+import { saveAccount } from "@/lib/data";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
+import type { Account } from "@/lib/types";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome da conta é muito curto."),
@@ -26,9 +28,10 @@ const formSchema = z.object({
 
 type AddAccountFormProps = {
     onFinished?: () => void;
+    account?: Account;
 };
 
-export function AddAccountForm({ onFinished }: AddAccountFormProps) {
+export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -41,6 +44,15 @@ export function AddAccountForm({ onFinished }: AddAccountFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (account) {
+      form.reset({
+        name: account.name,
+        balance: account.balance,
+      });
+    }
+  }, [account, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({
@@ -52,19 +64,19 @@ export function AddAccountForm({ onFinished }: AddAccountFormProps) {
     }
 
     try {
-        addAccount(firestore, user.uid, values);
+        saveAccount(firestore, user.uid, values, account?.id);
         toast({
             title: "Sucesso!",
-            description: "Conta adicionada com sucesso.",
+            description: account ? "Conta atualizada com sucesso." : "Conta adicionada com sucesso.",
         });
         form.reset();
         onFinished?.();
     } catch (error) {
-        console.error("Error adding account:", error);
+        console.error("Error saving account:", error);
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Não foi possível adicionar a conta.",
+            description: "Não foi possível salvar a conta.",
         });
     }
   }
@@ -90,7 +102,7 @@ export function AddAccountForm({ onFinished }: AddAccountFormProps) {
           name="balance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Saldo Inicial</FormLabel>
+              <FormLabel>Saldo {account ? 'Atual' : 'Inicial'}</FormLabel>
               <FormControl>
                 <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>

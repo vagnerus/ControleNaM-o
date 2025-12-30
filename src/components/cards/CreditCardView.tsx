@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Progress } from "../ui/progress";
 import { TransactionList } from "../transactions/TransactionList";
 import { Button } from "../ui/button";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Trash2, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,8 @@ import {
 import { deleteCard } from "@/lib/data";
 import { useFirestore, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { AddCardDialog } from "./AddCardDialog";
 
 
 type CreditCardViewProps = {
@@ -44,6 +46,7 @@ export function CreditCardView({ cardData, accounts }: CreditCardViewProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const availableLimit = cardData.limit - cardData.spent;
   const usagePercentage = (cardData.spent / cardData.limit) * 100;
@@ -70,38 +73,44 @@ export function CreditCardView({ cardData, accounts }: CreditCardViewProps) {
                 <CardTitle>{cardData.name}</CardTitle>
                 <CardDescription>Gerenciamento da fatura e limite do seu cartão.</CardDescription>
             </div>
-             <AlertDialog>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                         <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir
+            <AddCardDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} card={cardData}>
+              <AlertDialog>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                           <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
                             </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o
-                            seu cartão e todas as transações associadas a ele.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                            Excluir
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                           <AlertDialogTrigger asChild>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                              </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                              Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                              seu cartão e todas as transações associadas a ele.
+                          </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                              Excluir
+                          </AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+              </AlertDialog>
+            </AddCardDialog>
         </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
