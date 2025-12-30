@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -9,20 +9,40 @@ import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
-const initialSettings = {
-    receiveNotifications: true,
-    productNews: true,
-    premiumInfo: true,
-    financialAlerts: true,
-    partnerships: true,
+const getInitialSettings = () => {
+    if (typeof window === 'undefined') {
+        return {
+            receiveNotifications: true,
+            productNews: true,
+            premiumInfo: true,
+            financialAlerts: true,
+            partnerships: true,
+        };
+    }
+    const savedSettings = localStorage.getItem('notificationSettings');
+    return savedSettings ? JSON.parse(savedSettings) : {
+        receiveNotifications: true,
+        productNews: true,
+        premiumInfo: true,
+        financialAlerts: true,
+        partnerships: true,
+    };
 };
 
-type NotificationSetting = keyof typeof initialSettings;
+
+type NotificationSetting = keyof ReturnType<typeof getInitialSettings>;
 
 export function NotificationsSettingsForm() {
     const { toast } = useToast();
-    const [settings, setSettings] = useState(initialSettings);
+    const [settings, setSettings] = useState(getInitialSettings);
     const [isSaving, setIsSaving] = useState(false);
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('notificationSettings', JSON.stringify(settings));
+        }
+    }, [settings]);
+
 
     const handleSwitchChange = (id: NotificationSetting, checked: boolean) => {
         setSettings(prev => {
@@ -32,7 +52,7 @@ export function NotificationsSettingsForm() {
                 return Object.keys(newSettings).reduce((acc, key) => {
                     acc[key as NotificationSetting] = false;
                     return acc;
-                }, {} as typeof initialSettings);
+                }, {} as typeof settings);
             }
              // If a sub-switch is turned on, turn the main one on as well.
             if (id !== 'receiveNotifications' && checked) {
@@ -84,7 +104,7 @@ export function NotificationsSettingsForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                        <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                                <h3 className="font-medium">Novidades do Mobills</h3>
+                                <h3 className="font-medium">Novidades do ControleNaMão</h3>
                                 <p className="text-sm text-muted-foreground">
                                     Novas funcionalidades e as melhores dicas para transformar sua vida financeira para melhor.
                                 </p>
@@ -123,7 +143,7 @@ export function NotificationsSettingsForm() {
                         </div>
                         <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                                <h3 className="font-medium">Parcerias Mobills</h3>
+                                <h3 className="font-medium">Parcerias</h3>
                                 <p className="text-sm text-muted-foreground">
                                     Cupons, produtos financeiros, clube de benefício, e conteúdos especiais.
                                 </p>
