@@ -3,7 +3,7 @@
 
 import type { Account } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Landmark, MoreVertical, Trash2, Edit } from "lucide-react";
+import { MoreVertical, Trash2, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +24,7 @@ import {
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
-import { deleteAccount } from "@/lib/data";
+import { deleteAccount, getBankIcon } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { AddAccountDialog } from "./AddAccountDialog";
@@ -38,6 +38,8 @@ export function AccountCard({ account }: AccountCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const BankIcon = getBankIcon(account.icon).component;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -59,7 +61,7 @@ export function AccountCard({ account }: AccountCardProps) {
       <CardHeader className="flex-row items-center justify-between">
         <div className="flex items-center gap-3">
             <div className="p-3 rounded-lg bg-primary/10 text-primary">
-                <Landmark className="h-6 w-6" />
+                <BankIcon className="h-6 w-6" />
             </div>
             <div>
                 <CardTitle>{account.name}</CardTitle>

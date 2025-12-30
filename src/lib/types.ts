@@ -33,6 +33,7 @@ export type Account = {
   id: string;
   name: string;
   balance: number;
+  icon: string; // Bank icon identifier
 };
 
 export type Budget = {

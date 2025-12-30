@@ -28,6 +28,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { AddCardDialog } from "./AddCardDialog";
+import { BrandIcon } from "./BrandIcon";
 
 
 type CreditCardViewProps = {
@@ -37,13 +38,6 @@ type CreditCardViewProps = {
   tags: Tag[];
 };
 
-const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
-    // In a real app, these would be proper logo components or images
-    if (brand === 'visa') return <div className="font-bold text-lg italic text-blue-800 dark:text-blue-300">VISA</div>
-    if (brand === 'mastercard') return <div className="font-bold text-lg italic text-orange-500">Mastercard</div>
-    if (brand === 'amex') return <div className="font-bold text-lg text-blue-600">AMEX</div>
-    return <div className="font-bold text-lg">CARD</div>;
-}
 
 export function CreditCardView({ cardData, accounts, categories, tags }: CreditCardViewProps) {
   const { toast } = useToast();
@@ -122,7 +116,7 @@ export function CreditCardView({ cardData, accounts, categories, tags }: CreditC
              <div>
                 <div className="flex justify-between items-center">
                     <span className="text-sm font-light">ControleNaMão</span>
-                    <BrandLogo brand={cardData.brand} />
+                    <BrandIcon brand={cardData.brand} className="h-8" />
                 </div>
              </div>
              <div className="text-center font-mono text-xl tracking-widest">

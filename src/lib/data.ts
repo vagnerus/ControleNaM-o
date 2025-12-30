@@ -7,11 +7,35 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import * as lucide from "lucide-react"
 
+export type BankIcon = {
+  id: string;
+  name: string;
+  component: React.ComponentType<any>;
+};
+
 export const ICONS = Object.keys(lucide).filter(key => typeof (lucide as any)[key] === 'object' && 'displayName' in (lucide as any)[key]).map(key => ({
     id: key,
     name: key,
     component: (lucide as any)[key]
 }));
+
+export const BANK_ICONS: BankIcon[] = [
+    { id: 'Landmark', name: 'Outro', component: lucide.Landmark },
+    { id: 'piggy-bank', name: 'Poupança', component: lucide.PiggyBank },
+    { id: 'wallet', name: 'Carteira', component: lucide.Wallet },
+    { id: 'bradesco', name: 'Bradesco', component: () => <div className="font-bold text-red-600">B</div> },
+    { id: 'itau', name: 'Itaú', component: () => <div className="font-bold text-white bg-orange-500 rounded-sm px-1">Itaú</div> },
+    { id: 'nubank', name: 'Nubank', component: () => <div className="font-bold text-white bg-purple-600 rounded-sm px-1">Nu</div> },
+    { id: 'santander', name: 'Santander', component: () => <div className="font-bold text-white bg-red-500 rounded-sm px-1">Santander</div> },
+    { id: 'caixa', name: 'Caixa', component: () => <div className="font-bold text-white bg-blue-700 rounded-sm px-1">Caixa</div> },
+    { id: 'banco-do-brasil', name: 'Banco do Brasil', component: () => <div className="font-bold text-yellow-400 bg-blue-800 rounded-sm px-1">BB</div> },
+    { id: 'inter', name: 'Inter', component: () => <div className="font-bold text-white bg-orange-600 rounded-sm px-1">Inter</div> },
+];
+
+export const getBankIcon = (id: string): BankIcon => {
+    const icon = BANK_ICONS.find(i => i.id === id);
+    return icon || { id: 'Landmark', name: 'Outro', component: lucide.Landmark };
+}
 
 export const getIconComponent = (name: string): React.ComponentType<any> => {
     const icon = ICONS.find(i => i.name === name);
