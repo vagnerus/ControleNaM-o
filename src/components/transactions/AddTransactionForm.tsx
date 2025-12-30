@@ -40,6 +40,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebas
 import { Checkbox } from "../ui/checkbox";
 import { collection, query, where } from "firebase/firestore";
 import { Badge } from "../ui/badge";
+import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -76,6 +77,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: "expense",
+      amount: 0,
       description: "",
       date: new Date(),
       isInstallment: false,
@@ -112,6 +114,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     if (transaction) {
       form.reset({
         ...transaction,
+        amount: transaction.amount || 0,
         date: new Date(transaction.date),
         isInstallment: transaction.totalInstallments ? transaction.totalInstallments > 1 : false,
         tagIds: transaction.tagIds || [],
@@ -219,10 +222,12 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             <FormItem>
               <FormLabel>Valor</FormLabel>
               <FormControl>
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">R$</span>
-                    <Input type="number" step="0.01" placeholder="0,00" className="pl-9" {...field} />
-                </div>
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="Ex: 25 + 10"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

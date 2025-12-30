@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
+import { MagicInput } from "../common/MagicInput";
 
 
 const formSchema = z.object({
@@ -121,10 +122,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
                 <FormItem>
                 <FormLabel>Valor Alvo</FormLabel>
                 <FormControl>
-                    <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                        <Input type="number" step="0.01" placeholder="20000,00" className="pl-8" {...field} />
-                    </div>
+                    <MagicInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="20000,00"
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -137,10 +140,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
                 <FormItem>
                 <FormLabel>Valor Atual</FormLabel>
                 <FormControl>
-                    <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                        <Input type="number" step="0.01" placeholder="1500,00" className="pl-8" {...field} />
-                    </div>
+                     <MagicInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="1500,00"
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -154,10 +159,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
             <FormItem>
               <FormLabel>Meta de Economia Mensal</FormLabel>
               <FormControl>
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                    <Input type="number" step="0.01" placeholder="500,00" className="pl-8" {...field} />
-                </div>
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="500,00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

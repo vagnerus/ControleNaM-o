@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
 import type { CreditCard } from "@/lib/types";
 import { useEffect } from "react";
+import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome do cartão é muito curto."),
@@ -54,6 +55,7 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
     defaultValues: {
       name: "",
       last4: "",
+      limit: 0,
     },
   });
 
@@ -159,10 +161,12 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
             <FormItem>
               <FormLabel>Limite Total</FormLabel>
               <FormControl>
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                    <Input type="number" step="0.01" placeholder="5000,00" className="pl-8" {...field} />
-                </div>
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="5000,00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

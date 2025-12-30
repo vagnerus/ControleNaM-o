@@ -13,7 +13,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -28,6 +27,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebas
 import type { Budget, Category } from "@/lib/types";
 import { useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
+import { MagicInput } from "../common/MagicInput";
 
 
 const formSchema = z.object({
@@ -158,10 +158,12 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
             <FormItem>
               <FormLabel>Valor do Orçamento</FormLabel>
               <FormControl>
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">R$</span>
-                    <Input type="number" step="0.01" placeholder="500,00" className="pl-8" {...field} />
-                </div>
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="500,00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
