@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -102,7 +101,7 @@ export const saveTransaction = (
                 installmentNumber: i + 1,
             });
         }
-        batch.commit().catch(error => {
+        return batch.commit().catch(error => {
             console.error("Error creating installments:", error)
             const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
             errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -112,7 +111,7 @@ export const saveTransaction = (
             }));
         });
     } else { // For single new transactions or updating existing ones
-        runTransaction(firestore, async (tx) => {
+        return runTransaction(firestore, async (tx) => {
             const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
             const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
             let oldTransactionData: Transaction | null = null;
@@ -204,7 +203,7 @@ export const saveCard = (
 
   if (cardId) {
     const cardDoc = doc(firestore, 'users', userId, 'creditCards', cardId);
-    setDoc(cardDoc, cardData, { merge: true }).catch(error => {
+    return setDoc(cardDoc, cardData, { merge: true }).catch(error => {
       console.error("Error updating card: ", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: cardDoc.path,
@@ -214,7 +213,7 @@ export const saveCard = (
     });
   } else {
     const cardsCollection = collection(firestore, 'users', userId, 'creditCards');
-    addDoc(cardsCollection, cardData).catch(error => {
+    return addDoc(cardsCollection, cardData).catch(error => {
       console.error("Error adding card: ", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: cardsCollection.path,
@@ -235,7 +234,7 @@ export const deleteCard = (
   }
   const cardDoc = doc(firestore, 'users', userId, 'creditCards', cardId);
   
-  deleteDoc(cardDoc)
+  return deleteDoc(cardDoc)
     .catch(error => {
       console.error("Error deleting card: ", error);
       errorEmitter.emit(
@@ -262,7 +261,7 @@ export const saveAccount = (
     const accountDoc = doc(firestore, 'users', userId, 'accounts', accountId);
     // Be careful with balance updates. This assumes the form provides the *new* total balance.
     // A more robust solution for balance would be to calculate it based on transactions.
-    setDoc(accountDoc, accountData, { merge: true }).catch(error => {
+    return setDoc(accountDoc, accountData, { merge: true }).catch(error => {
       console.error("Error updating account: ", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: accountDoc.path,
@@ -272,7 +271,7 @@ export const saveAccount = (
     });
   } else {
     const accountsCollection = collection(firestore, 'users', userId, 'accounts');
-    addDoc(accountsCollection, accountData).catch(error => {
+    return addDoc(accountsCollection, accountData).catch(error => {
       console.error("Error adding account: ", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: accountsCollection.path,
@@ -296,7 +295,7 @@ export const deleteAccount = (
   // In a real app, you might want to re-assign them or delete them.
   const accountDoc = doc(firestore, 'users', userId, 'accounts', accountId);
   
-  deleteDoc(accountDoc)
+  return deleteDoc(accountDoc)
     .catch(error => {
       console.error("Error deleting account: ", error);
       errorEmitter.emit(
@@ -319,13 +318,13 @@ export const saveBudget = (firestore: Firestore, userId: string, budgetData: Omi
   if (budgetId) {
     // Update existing budget
     const budgetDoc = doc(firestore, 'users', userId, 'budgets', budgetId);
-    updateDoc(budgetDoc, budgetPayload).catch(error => {
+    return updateDoc(budgetDoc, budgetPayload).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetDoc.path, operation: 'update', requestResourceData: budgetPayload }));
     });
   } else {
     // Add new budget
     const budgetsCollection = collection(firestore, 'users', userId, 'budgets');
-    addDoc(budgetsCollection, budgetPayload).catch(error => {
+    return addDoc(budgetsCollection, budgetPayload).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetsCollection.path, operation: 'create', requestResourceData: budgetPayload }));
     });
   }
@@ -334,7 +333,7 @@ export const saveBudget = (firestore: Firestore, userId: string, budgetData: Omi
 export const deleteBudget = (firestore: Firestore, userId: string, budgetId: string) => {
   if (!userId) throw new Error("User must be authenticated.");
   const budgetDoc = doc(firestore, 'users', userId, 'budgets', budgetId);
-  deleteDoc(budgetDoc).catch(error => {
+  return deleteDoc(budgetDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetDoc.path, operation: 'delete' }));
   });
 };
@@ -347,12 +346,12 @@ export const saveGoal = (firestore: Firestore, userId: string, goalData: Omit<Fi
   if (goalId) {
     // Update existing goal
     const goalDoc = doc(firestore, 'users', userId, 'financialGoals', goalId);
-    updateDoc(goalDoc, goalData).catch(error => {
+    return updateDoc(goalDoc, goalData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'update', requestResourceData: goalData }));
     });
   } else {
     // Add new goal
-    addDoc(goalsCollection, goalData).catch(error => {
+    return addDoc(goalsCollection, goalData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalsCollection.path, operation: 'create', requestResourceData: goalData }));
     });
   }
@@ -361,7 +360,7 @@ export const saveGoal = (firestore: Firestore, userId: string, goalData: Omit<Fi
 export const deleteGoal = (firestore: Firestore, userId: string, goalId: string) => {
   if (!userId) throw new Error("User must be authenticated.");
   const goalDoc = doc(firestore, 'users', userId, 'financialGoals', goalId);
-  deleteDoc(goalDoc).catch(error => {
+  return deleteDoc(goalDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'delete' }));
   });
 };
@@ -373,13 +372,13 @@ export const saveCategory = (firestore: Firestore, userId: string, categoryData:
   if (categoryId) {
     // Update existing category
     const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
-    updateDoc(categoryDoc, categoryData).catch(error => {
+    return updateDoc(categoryDoc, categoryData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryDoc.path, operation: 'update', requestResourceData: categoryData }));
     });
   } else {
     // Add new category
     const categoriesCollection = collection(firestore, 'users', userId, 'categories');
-    addDoc(categoriesCollection, categoryData).catch(error => {
+    return addDoc(categoriesCollection, categoryData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoriesCollection.path, operation: 'create', requestResourceData: categoryData }));
     });
   }
@@ -388,7 +387,7 @@ export const saveCategory = (firestore: Firestore, userId: string, categoryData:
 export const deleteCategory = (firestore: Firestore, userId: string, categoryId: string) => {
   if (!userId) throw new Error("User must be authenticated.");
   const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
-  deleteDoc(categoryDoc).catch(error => {
+  return deleteDoc(categoryDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: categoryDoc.path, operation: 'delete' }));
   });
 };
@@ -415,7 +414,7 @@ export const isCategoryInUse = async (firestore: Firestore, userId: string, cate
 export const saveTag = (firestore: Firestore, userId: string, tagData: Omit<Tag, 'id'>) => {
   if (!userId) throw new Error("User must be authenticated.");
   const tagsCollection = collection(firestore, 'users', userId, 'tags');
-  addDoc(tagsCollection, tagData).catch(error => {
+  return addDoc(tagsCollection, tagData).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagsCollection.path, operation: 'create', requestResourceData: tagData }));
   });
 };
@@ -432,7 +431,7 @@ export const deleteTag = async (firestore: Firestore, userId: string, tagId: str
   }
 
   const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);
-  deleteDoc(tagDoc).catch(error => {
+  return deleteDoc(tagDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'delete' }));
   });
 };
