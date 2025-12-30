@@ -56,7 +56,7 @@ export function TransactionList({ transactions, accounts, categories = [], tags 
     }
 
     const getTags = (tagIds: string[] = []) => {
-        return tags?.filter(tag => tag.id === tagId) || [];
+        return tagIds.map(tagId => tags?.find(tag => tag.id === tagId)).filter(Boolean) as Tag[];
     }
 
     const formatCurrency = (value: number) =>

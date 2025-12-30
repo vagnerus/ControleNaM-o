@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, orderBy } from 'firebase/firestore';
-import type { Transaction, Budget, FinancialGoal, Account, Category } from '@/lib/types';
+import type { Transaction, Budget, FinancialGoal, Account, Category, Tag } from '@/lib/types';
 import {
   Card,
   CardContent,

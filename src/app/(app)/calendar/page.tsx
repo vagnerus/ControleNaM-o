@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { TransactionList } from '@/components/transactions/TransactionList';
 import type { Account, Category, Tag, Transaction } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
-import { isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 
 export default function CalendarPage() {
     const { user } = useUser();
@@ -80,18 +80,18 @@ export default function CalendarPage() {
                         onMonthChange={setCurrentMonth}
                         className="p-0"
                         classNames={{
-                            cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
-                            day: "h-14 w-14 p-1 font-normal aria-selected:opacity-100",
+                            cell: "text-center text-sm p-0 relative first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md",
+                            day: "h-16 w-full p-1 font-normal aria-selected:opacity-100",
                         }}
                         components={{
                             DayContent: ({ date }) => {
                                 const dayKey = format(date, 'yyyy-MM-dd');
                                 const info = dayTransactionInfo.get(dayKey);
                                 return (
-                                    <div className="relative h-full w-full flex items-center justify-center">
-                                        <span>{date.getDate()}</span>
+                                    <div className="relative h-full w-full flex items-start justify-end flex-col p-1">
+                                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">{date.getDate()}</span>
                                         {(info?.income || info?.expense) && (
-                                            <div className="absolute bottom-2 flex space-x-1">
+                                            <div className="flex space-x-1 self-center">
                                                 {info.income && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
                                                 {info.expense && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
                                             </div>
