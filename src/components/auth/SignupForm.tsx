@@ -22,6 +22,7 @@ import { FirebaseError } from 'firebase/app';
 
 
 const formSchema = z.object({
+  name: z.string().min(2, "O nome é muito curto."),
   email: z.string().email('Email inválido.'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
 });
@@ -32,6 +33,7 @@ export function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
     },
@@ -39,7 +41,7 @@ export function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await signUpWithEmail(auth, values.email, values.password);
+      await signUpWithEmail(auth, values.email, values.password, values.name);
       // The redirect is handled by the AuthGate
     } catch (error) {
        let description = 'Ocorreu um erro desconhecido. Tente novamente.';
@@ -60,6 +62,19 @@ export function SignupForm() {
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+           <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome Completo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Seu nome completo" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="email"
@@ -92,12 +107,6 @@ export function SignupForm() {
           </Button>
         </form>
       </Form>
-      <p className="text-center text-sm text-muted-foreground">
-        Já tem uma conta?{' '}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
-          Faça login
-        </Link>
-      </p>
     </div>
   );
 }

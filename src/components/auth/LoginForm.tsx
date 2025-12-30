@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { signInWithEmail } from '@/firebase/auth/auth';
+import { signInWithEmail, signInWithGoogle } from '@/firebase/auth/auth';
 import { useAuth } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
 
@@ -91,12 +91,6 @@ export function LoginForm() {
           </Button>
         </form>
       </Form>
-      <p className="text-center text-sm text-muted-foreground">
-        Não tem uma conta?{' '}
-        <Link href="/signup" className="font-semibold text-primary hover:underline">
-          Cadastre-se
-        </Link>
-      </p>
     </div>
   );
 }

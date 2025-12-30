@@ -10,10 +10,15 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
+  updateProfile,
 } from 'firebase/auth';
 
-export async function signUpWithEmail(auth: Auth, email: string, password: string) {
-  return await createUserWithEmailAndPassword(auth, email, password);
+export async function signUpWithEmail(auth: Auth, email: string, password: string, displayName: string) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  if (userCredential.user) {
+    await updateProfile(userCredential.user, { displayName });
+  }
+  return userCredential;
 }
 
 export async function signInWithEmail(auth: Auth, email: string, password: string) {
