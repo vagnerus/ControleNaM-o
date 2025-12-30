@@ -42,16 +42,16 @@ export const getCategories = async (type?: 'income' | 'expense'): Promise<Catego
 };
 
 let transactions: Transaction[] = [
-  { id: 'txn_1', type: 'expense', amount: 150.75, date: new Date(new Date().setDate(1)).toISOString(), description: 'Compras da semana', category: 'Supermercado', cardId: 'card_1' },
-  { id: 'txn_2', type: 'income', amount: 5000, date: new Date(new Date().setDate(5)).toISOString(), description: 'Salário de Maio', category: 'Salário' },
-  { id: 'txn_3', type: 'expense', amount: 80.00, date: new Date(new Date().setDate(3)).toISOString(), description: 'Jantar com amigos', category: 'Alimentação', cardId: 'card_2' },
-  { id: 'txn_4', type: 'expense', amount: 1200.00, date: new Date(new Date().setDate(10)).toISOString(), description: 'Aluguel', category: 'Moradia' },
-  { id: 'txn_5', type: 'expense', amount: 50.00, date: new Date(new Date().setDate(8)).toISOString(), description: 'Uber', category: 'Transporte', cardId: 'card_1' },
-  { id: 'txn_6', type: 'expense', amount: 250.00, date: new Date(new Date().setDate(12)).toISOString(), description: 'Cinema e pipoca', category: 'Lazer', cardId: 'card_2' },
-  { id: 'txn_7', type: 'expense', amount: 300.00, date: new Date(new Date().setDate(15)).toISOString(), description: 'Curso de Inglês', category: 'Educação' },
-  { id: 'txn_8', type: 'income', amount: 300.00, date: new Date(new Date().setDate(16)).toISOString(), description: 'Freelance de design', category: 'Outras Receitas' },
-  { id: 'txn_9', type: 'expense', amount: 25.50, date: new Date(new Date().setDate(18)).toISOString(), description: 'iFood', category: 'Alimentação', cardId: 'card_1' },
-  { id: 'txn_10', type: 'expense', amount: 150.00, date: new Date(new Date().setDate(20)).toISOString(), description: 'Consulta médica', category: 'Saúde' },
+  { id: 'txn_1', type: 'expense', amount: 150.75, date: new Date(new Date().setMonth(new Date().getMonth(), 1)).toISOString(), description: 'Compras da semana', category: 'Supermercado', cardId: 'card_1' },
+  { id: 'txn_2', type: 'income', amount: 5000, date: new Date(new Date().setMonth(new Date().getMonth(), 5)).toISOString(), description: 'Salário de Maio', category: 'Salário' },
+  { id: 'txn_3', type: 'expense', amount: 80.00, date: new Date(new Date().setMonth(new Date().getMonth(), 3)).toISOString(), description: 'Jantar com amigos', category: 'Alimentação', cardId: 'card_2' },
+  { id: 'txn_4', type: 'expense', amount: 1200.00, date: new Date(new Date().setMonth(new Date().getMonth(), 10)).toISOString(), description: 'Aluguel', category: 'Moradia' },
+  { id: 'txn_5', type: 'expense', amount: 50.00, date: new Date(new Date().setMonth(new Date().getMonth(), 8)).toISOString(), description: 'Uber', category: 'Transporte', cardId: 'card_1' },
+  { id: 'txn_6', type: 'expense', amount: 250.00, date: new Date(new Date().setMonth(new Date().getMonth(), 12)).toISOString(), description: 'Cinema e pipoca', category: 'Lazer', cardId: 'card_2' },
+  { id: 'txn_7', type: 'expense', amount: 300.00, date: new Date(new Date().setMonth(new Date().getMonth(), 15)).toISOString(), description: 'Curso de Inglês', category: 'Educação' },
+  { id: 'txn_8', type: 'income', amount: 300.00, date: new Date(new Date().setMonth(new Date().getMonth(), 16)).toISOString(), description: 'Freelance de design', category: 'Outras Receitas' },
+  { id: 'txn_9', type: 'expense', amount: 25.50, date: new Date(new Date().setMonth(new Date().getMonth(), 18)).toISOString(), description: 'iFood', category: 'Alimentação', cardId: 'card_1' },
+  { id: 'txn_10', type: 'expense', amount: 150.00, date: new Date(new Date().setMonth(new Date().getMonth(), 20)).toISOString(), description: 'Consulta médica', category: 'Saúde' },
 ];
 
 const creditCards: CreditCard[] = [
@@ -75,6 +75,17 @@ let financialGoals: FinancialGoal[] = [
 
 // --- API-like functions ---
 
+const getCurrentMonthTransactions = () => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    return transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+    });
+}
+
+
 // Transactions
 export const getTransactions = async (): Promise<Transaction[]> => {
     return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -89,7 +100,7 @@ export const addTransaction = async (transaction: Omit<Transaction, 'id'>): Prom
         ...transaction,
         id: `txn_${Date.now()}`
     };
-    transactions.push(newTransaction);
+    transactions.unshift(newTransaction);
     // update budget spent
     const budget = budgets.find(b => b.category === newTransaction.category);
     if (budget && newTransaction.type === 'expense') {
@@ -100,18 +111,20 @@ export const addTransaction = async (transaction: Omit<Transaction, 'id'>): Prom
 
 // Summary
 export const getSummary = async () => {
-    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const currentMonthTransactions = getCurrentMonthTransactions();
+    const income = currentMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const balance = income - expenses;
     return { income, expenses, balance, monthlyIncome: 5300 };
 };
 
 // Budgets
 export const getBudgets = async (): Promise<Budget[]> => {
+  const currentMonthTransactions = getCurrentMonthTransactions();
   // Recalculate spent for each budget before returning
   return budgets.map(budget => ({
     ...budget,
-    spent: transactions
+    spent: currentMonthTransactions
       .filter(t => t.category === budget.category && t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0),
   }));
@@ -119,7 +132,8 @@ export const getBudgets = async (): Promise<Budget[]> => {
 
 export const getSpendingByCategory = async () => {
     const spending: Record<string, number> = {};
-    transactions.filter(t => t.type === 'expense').forEach(t => {
+    const currentMonthTransactions = getCurrentMonthTransactions();
+    currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
         spending[t.category] = (spending[t.category] || 0) + t.amount;
     });
     return spending;

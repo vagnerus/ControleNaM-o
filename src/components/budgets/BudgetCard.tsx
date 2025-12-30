@@ -20,7 +20,7 @@ export function BudgetCard({ budget, isCompact = false }: BudgetCardProps) {
     }).format(value);
 
   const progressColor =
-    percentage > 90 ? "bg-red-500" : percentage > 75 ? "bg-yellow-500" : "bg-primary";
+    percentage > 90 ? "bg-destructive" : percentage > 75 ? "bg-yellow-500" : "bg-primary";
 
   if (isCompact) {
     return (
@@ -61,7 +61,7 @@ export function BudgetCard({ budget, isCompact = false }: BudgetCardProps) {
         <Progress value={percentage} indicatorClassName={progressColor} className="h-3" />
         <p className={cn(
             "text-sm text-right font-medium",
-            percentage > 90 ? "text-red-500" : percentage > 75 ? "text-yellow-500" : "text-muted-foreground"
+            percentage > 90 ? "text-destructive" : percentage > 75 ? "text-yellow-500" : "text-muted-foreground"
         )}>
             {percentage.toFixed(0)}% utilizado
         </p>

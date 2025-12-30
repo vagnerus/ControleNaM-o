@@ -9,6 +9,7 @@ import {
   getBudgets,
   getFinancialGoals,
   getRecentTransactions,
+  getSpendingByCategory,
   getSummary,
 } from "@/lib/data";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
@@ -18,12 +19,14 @@ import { GoalCard } from "@/components/goals/GoalCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { CategoryChart } from "@/components/dashboard/CategoryChart";
 
 export default async function DashboardPage() {
   const summary = await getSummary();
   const recentTransactions = await getRecentTransactions(5);
   const budgets = await getBudgets();
   const goals = await getFinancialGoals();
+  const spendingByCategory = await getSpendingByCategory();
 
   return (
     <div className="flex flex-col">
@@ -56,7 +59,43 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+           <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Despesas por Categoria</CardTitle>
+                    <CardDescription>
+                      Visão geral dos seus gastos no mês.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pl-2">
+                    <CategoryChart data={spendingByCategory} />
+                  </CardContent>
+                </Card>
+            </div>
+          <div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Orçamentos</CardTitle>
+                  <CardDescription>Seu progresso de gastos este mês.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/budgets">
+                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {budgets.slice(0, 2).map((budget) => (
+                  <BudgetCard key={budget.id} budget={budget} isCompact />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -73,26 +112,6 @@ export default async function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <TransactionList transactions={recentTransactions} />
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Orçamentos</CardTitle>
-                  <CardDescription>Seu progresso de gastos este mês.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/budgets">
-                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {budgets.slice(0, 3).map((budget) => (
-                  <BudgetCard key={budget.id} budget={budget} isCompact />
-                ))}
               </CardContent>
             </Card>
           </div>
