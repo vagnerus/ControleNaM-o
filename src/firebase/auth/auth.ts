@@ -11,6 +11,7 @@ import {
   reauthenticateWithCredential,
   updatePassword,
   updateProfile,
+  sendEmailVerification,
 } from 'firebase/auth';
 
 export async function signUpWithEmail(auth: Auth, email: string, password: string, displayName: string) {
@@ -42,6 +43,8 @@ export async function updateUserEmail(auth: Auth, currentPasswordForReauth: stri
     
     // Now update the email
     await updateEmail(auth.currentUser, newEmail);
+    // After updating, send a verification email to the new address
+    await sendEmailVerification(auth.currentUser);
 }
 
 export async function updateUserPassword(auth: Auth, currentPasswordForReauth: string, newPassword: string) {

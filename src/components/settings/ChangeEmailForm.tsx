@@ -45,7 +45,7 @@ export function ChangeEmailForm() {
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
-    defaultValues: { email: '' },
+    defaultValues: { email: user?.email || '' },
   });
 
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
@@ -73,17 +73,19 @@ export function ChangeEmailForm() {
     } catch (error) {
         let description = 'Ocorreu um erro desconhecido.';
         if (error instanceof FirebaseError) {
-            if (error.code === 'auth/invalid-credential') {
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
                 description = 'A senha informada está incorreta.';
             } else if (error.code === 'auth/email-already-in-use') {
                 description = 'Este endereço de e-mail já está em uso por outra conta.';
+            } else if (error.code === 'auth/requires-recent-login') {
+                description = 'Esta operação é sensível e requer autenticação recente. Por favor, faça login novamente e tente de novo.';
             }
         }
         toast({ variant: 'destructive', title: 'Erro ao alterar e-mail', description });
     } finally {
         setIsReauthDialogOpen(false);
         passwordForm.reset();
-        emailForm.reset();
+        emailForm.reset({ email: newEmail });
     }
   };
 
@@ -99,14 +101,14 @@ export function ChangeEmailForm() {
         <CardContent>
           <Form {...emailForm}>
             <form onSubmit={emailForm.handleSubmit(handleEmailSubmit)} className="space-y-4">
-              <div className="flex items-end gap-4">
-                <div className="flex-grow">
+              <div className="flex flex-col sm:flex-row items-end gap-4">
+                <div className="flex-grow w-full">
                   <FormField
                     control={emailForm.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Novo e-mail</FormLabel>
+                        <FormLabel>E-mail</FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="seu-novo@email.com" {...field} />
                         </FormControl>
@@ -115,7 +117,7 @@ export function ChangeEmailForm() {
                     )}
                   />
                 </div>
-                <Button type="submit" disabled={emailForm.formState.isSubmitting}>
+                <Button type="submit" className="w-full sm:w-auto" disabled={emailForm.formState.isSubmitting}>
                     {emailForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Mudar E-mail
                 </Button>
@@ -140,7 +142,7 @@ export function ChangeEmailForm() {
                             <FormItem>
                                 <FormLabel>Senha Atual</FormLabel>
                                 <FormControl>
-                                <Input type="password" {...field} />
+                                <Input type="password" {...field} autoFocus />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

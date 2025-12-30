@@ -48,10 +48,12 @@ export function ChangePasswordForm() {
     } catch (error) {
          let description = 'Ocorreu um erro desconhecido.';
         if (error instanceof FirebaseError) {
-            if (error.code === 'auth/invalid-credential') {
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
                 description = 'A senha atual informada está incorreta.';
             } else if (error.code === 'auth/weak-password') {
                 description = 'A nova senha é muito fraca. Tente uma mais forte.';
+            } else if (error.code === 'auth/requires-recent-login') {
+                description = 'Esta operação é sensível e requer autenticação recente. Por favor, faça login novamente e tente de novo.';
             }
         }
         toast({ variant: 'destructive', title: 'Erro ao alterar senha', description });
