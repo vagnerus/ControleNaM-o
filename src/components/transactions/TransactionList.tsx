@@ -40,11 +40,11 @@ import { useState } from "react";
 type TransactionListProps = {
   transactions: Transaction[];
   accounts: Account[];
-  categories: Category[];
-  tags: Tag[];
+  categories?: Category[];
+  tags?: Tag[];
 };
 
-export function TransactionList({ transactions, accounts, categories, tags }: TransactionListProps) {
+export function TransactionList({ transactions, accounts, categories = [], tags = [] }: TransactionListProps) {
     const { toast } = useToast();
     const { user } = useUser();
     const firestore = useFirestore();

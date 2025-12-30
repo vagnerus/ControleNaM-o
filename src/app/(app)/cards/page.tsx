@@ -2,7 +2,7 @@
 
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import type { Account, CreditCard, Transaction } from '@/lib/types';
+import type { Account, CreditCard, Transaction, Category, Tag } from '@/lib/types';
 import { Header } from "@/components/common/Header";
 import { CreditCardView } from "@/components/cards/CreditCardView";
 import { Loader2 } from 'lucide-react';
@@ -26,11 +26,21 @@ export default function CardsPage() {
     user ? collection(firestore, 'users', user.uid, 'accounts') : null
   , [firestore, user]);
 
+  const categoriesQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'categories') : null
+  , [firestore, user]);
+
+  const tagsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'tags') : null
+  , [firestore, user]);
+
   const { data: cards, isLoading: cardsLoading } = useCollection<CreditCard>(cardsQuery);
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
   const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+  const { data: tags, isLoading: tagsLoading } = useCollection<Tag>(tagsQuery);
 
-  const isLoading = cardsLoading || transactionsLoading || accountsLoading;
+  const isLoading = cardsLoading || transactionsLoading || accountsLoading || categoriesLoading || tagsLoading;
 
   const cardsWithTransactions = (cards || []).map(card => {
     const cardTransactions = (transactions || []).filter(
@@ -66,7 +76,7 @@ export default function CardsPage() {
         ) : (
             <div className="space-y-8">
                 {cardsWithTransactions.map((cardData) => (
-                    <CreditCardView key={cardData.id} cardData={cardData} accounts={accounts || []}/>
+                    <CreditCardView key={cardData.id} cardData={cardData} accounts={accounts || []} categories={categories || []} tags={tags || []} />
                 ))}
             </div>
         )}

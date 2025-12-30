@@ -7,7 +7,7 @@ import { Header } from "@/components/common/Header";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TransactionList } from '@/components/transactions/TransactionList';
-import type { Account, Transaction } from '@/lib/types';
+import type { Account, Category, Tag, Transaction } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 
@@ -24,12 +24,22 @@ export default function CalendarPage() {
     const accountsQuery = useMemoFirebase(() =>
         user ? collection(firestore, 'users', user.uid, 'accounts') : null
     , [firestore, user]);
+    
+    const categoriesQuery = useMemoFirebase(() =>
+        user ? collection(firestore, 'users', user.uid, 'categories') : null
+    , [firestore, user]);
+
+    const tagsQuery = useMemoFirebase(() =>
+        user ? collection(firestore, 'users', user.uid, 'tags') : null
+    , [firestore, user]);
 
     // Data fetching
     const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
     const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
+    const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+    const { data: tags, isLoading: tagsLoading } = useCollection<Tag>(tagsQuery);
     
-    const isLoading = transactionsLoading || accountsLoading;
+    const isLoading = transactionsLoading || accountsLoading || categoriesLoading || tagsLoading;
 
     const transactionDates = useMemo(() => {
         return (transactions || []).map(t => new Date(t.date));
@@ -87,7 +97,7 @@ export default function CalendarPage() {
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : selectedDayTransactions.length > 0 ? (
-                        <TransactionList transactions={selectedDayTransactions} accounts={accounts || []} />
+                        <TransactionList transactions={selectedDayTransactions} accounts={accounts || []} categories={categories || []} tags={tags || []} />
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-center">
                             <p className="text-muted-foreground">Nenhuma transação neste dia.</p>
