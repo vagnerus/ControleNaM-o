@@ -354,7 +354,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
@@ -563,3 +564,4 @@
     "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable, adhering to the core design principles. It prioritizes Authorization Independence by denormalizing authorization data, ensures Clarity of Intent by making authorization logic explicit, and avoids custom claims by storing roles in the database (DBAC). The structure also supports secure `list` operations (QAPs) through structural segregation and membership models, and maintains data integrity through invariants. The error \"Firebase: Error (auth/operation-not-allowed)\" suggests an issue with authentication configuration, ensure sign-in methods are enabled in Firebase console. The data structure facilitates scalable and robust security rules.\n\nAuthorization Independence is achieved by avoiding hierarchical authorization dependencies. All authorization information needed to validate a request is present within the document itself, or can be derived from the path, eliminating the need for `get()` calls in security rules. This is achieved through path-based ownership and membership maps. For example, the transactions subcollection relies on path based ownership `users/{userId}/transactions/{transactionId}` so the security rules are simplified to checking `request.auth.uid == userId`.\n\nQAPs (Rules are not Filters) are supported by segregating data based on access needs and using membership models where appropriate. Path based ownership is used for private user data, meaning only the user can access their own transactions, categories, subcategories, accounts, attachments, tags, credit cards, installments, budgets, and financial goals. Thus list operations are secure and efficient."
   }
 }
+    
