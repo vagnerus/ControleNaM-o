@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { saveTransaction } from "@/lib/data.tsx";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2, Paperclip, X } from "lucide-react";
+import { CalendarIcon, Loader2, Paperclip, X, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState, useMemo } from "react";
@@ -44,6 +44,7 @@ import { Switch } from "../ui/switch";
 import { MultiSelect, Option } from "../ui/multi-select";
 import { useStorage, uploadAttachment } from "@/firebase/storage";
 import { Badge } from "../ui/badge";
+import { suggestCategory } from "@/ai/flows/suggest-category-flow";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -88,6 +89,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   
   const [attachments, setAttachments] = useState<File[]>([]);
   const [existingAttachments, setExistingAttachments] = useState<string[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -125,7 +127,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   const { data: accounts } = useCollection<Account>(accountsQuery);
 
   const tagsQuery = useMemoFirebase(() =>
-    user ? query(collection(firestore, 'users', user.uid, 'tags')) : null
+    user ? collection(firestore, 'users', user.uid, 'tags') : null
   , [firestore, user]);
   const { data: tags } = useCollection<Tag>(tagsQuery);
   const tagOptions = useMemo(() => (tags || []).map(tag => ({ value: tag.id, label: tag.name })), [tags]);
@@ -178,6 +180,48 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   const removeExistingAttachment = (url: string) => {
     setExistingAttachments(prev => prev.filter(item => item !== url));
   };
+  
+  const handleSuggestCategory = async () => {
+    const description = form.getValues('description');
+    if (!description || !categories || categories.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Informação insuficiente',
+        description: 'Por favor, preencha a descrição primeiro.',
+      });
+      return;
+    }
+    
+    setIsSuggesting(true);
+    try {
+      const result = await suggestCategory({
+        description,
+        categories: categories.map(c => ({ id: c.id, name: c.name })),
+      });
+      if (result.categoryId && categories.some(c => c.id === result.categoryId)) {
+        form.setValue('categoryId', result.categoryId, { shouldValidate: true });
+        toast({
+          title: 'Categoria Sugerida!',
+          description: `A IA sugeriu a categoria "${categories.find(c => c.id === result.categoryId)?.name}".`,
+        });
+      } else {
+        toast({
+          title: 'Nenhuma sugestão clara',
+          description: 'A IA não encontrou uma categoria correspondente. Por favor, selecione manualmente.',
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro na IA',
+        description: 'Não foi possível obter uma sugestão. Tente novamente.',
+      });
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -269,6 +313,19 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         />
         <FormField
           control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Ex: Café com amigos" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="accountId"
           render={({ field }) => (
             <FormItem>
@@ -297,20 +354,25 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma categoria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" type="button" onClick={handleSuggestCategory} disabled={isSuggesting} title="Sugerir Categoria com IA">
+                    {isSuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-primary" />}
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -440,19 +502,6 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                   />
                 </PopoverContent>
               </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Ex: Café com amigos" {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}

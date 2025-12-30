@@ -125,6 +125,19 @@
         "type"
       ]
     },
+    "CategorySuggestion": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "CategorySuggestion",
+        "type": "object",
+        "description": "Represents an AI-powered suggestion for a transaction category.",
+        "properties": {
+            "categoryId": {
+                "type": "string",
+                "description": "The suggested category ID based on the transaction description."
+            }
+        },
+        "required": ["categoryId"]
+    },
     "RecurringTransaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "RecurringTransaction",
