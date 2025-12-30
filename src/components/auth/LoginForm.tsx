@@ -38,9 +38,22 @@ export function LoginForm() {
   });
 
   const handleGoogleSignIn = async () => {
-    // No try-catch needed here as errors will be handled globally
-    // or by the redirect result handler in AuthGate.
-    await signInWithGoogle(auth);
+    try {
+      await signInWithGoogle(auth);
+       // The redirect is handled by the AuthGate
+    } catch (error) {
+       console.error("Google Sign-In Error:", error);
+       if (error instanceof FirebaseError) {
+        // The user closed the popup or there was another error
+        if (error.code !== 'auth/popup-closed-by-user') {
+             toast({
+                variant: 'destructive',
+                title: 'Erro no Login com Google',
+                description: 'Não foi possível fazer login com o Google. Tente novamente.',
+            });
+        }
+       }
+    }
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {

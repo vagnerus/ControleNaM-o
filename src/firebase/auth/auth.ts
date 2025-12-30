@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  signInWithRedirect,
   updateEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
@@ -23,9 +22,8 @@ export async function signInWithEmail(auth: Auth, email: string, password: strin
 
 export async function signInWithGoogle(auth: Auth) {
   const provider = new GoogleAuthProvider();
-  // Use signInWithRedirect for a better experience on mobile and to avoid popup blockers.
-  // The result is handled by onAuthStateChanged and getRedirectResult.
-  await signInWithRedirect(auth, provider);
+  // Use signInWithPopup for a more direct login flow, especially in desktop environments.
+  await signInWithPopup(auth, provider);
 }
 
 export async function updateUserEmail(auth: Auth, currentPasswordForReauth: string, newEmail: string) {

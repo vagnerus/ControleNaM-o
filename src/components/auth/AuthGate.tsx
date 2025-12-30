@@ -4,7 +4,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getRedirectResult } from 'firebase/auth';
 
 const AUTH_ROUTES = ['/login', '/signup'];
 const PUBLIC_ROUTES = [...AUTH_ROUTES]; 
@@ -12,16 +11,7 @@ const PUBLIC_ROUTES = [...AUTH_ROUTES];
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const auth = useAuth();
   const { user, isUserLoading, userError } = useUser();
-
-  useEffect(() => {
-    // This handles the redirect result from Google Sign-In
-    getRedirectResult(auth).catch((error) => {
-      // Handle or log errors from the redirect result if necessary
-      console.error("Error from redirect result:", error);
-    });
-  }, [auth]);
 
   useEffect(() => {
     if (isUserLoading) {
