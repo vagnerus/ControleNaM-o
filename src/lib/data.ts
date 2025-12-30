@@ -25,7 +25,7 @@ import {
   Bus,
   Baby,
 } from 'lucide-react';
-import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Icon } from '@/lib/types';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Icon, Tag } from '@/lib/types';
 import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -384,4 +384,30 @@ export const isCategoryInUse = async (firestore: Firestore, userId: string, cate
     }
 
     return false;
+};
+
+// Tag Functions
+export const saveTag = (firestore: Firestore, userId: string, tagData: Omit<Tag, 'id'>) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  const tagsCollection = collection(firestore, 'users', userId, 'tags');
+  addDoc(tagsCollection, tagData).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagsCollection.path, operation: 'create', requestResourceData: tagData }));
+  });
+};
+
+export const deleteTag = async (firestore: Firestore, userId: string, tagId: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+
+  // Check if tag is in use
+  const transactionsQuery = query(collection(firestore, 'users', userId, 'transactions'), where('tagIds', 'array-contains', tagId));
+  const querySnapshot = await getDocs(transactionsQuery);
+
+  if (!querySnapshot.empty) {
+    throw new Error("Tag is in use and cannot be deleted.");
+  }
+
+  const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);
+  deleteDoc(tagDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'delete' }));
+  });
 };

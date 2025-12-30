@@ -1,26 +1,95 @@
 'use client';
 
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Tag } from '@/lib/types';
 import { Header } from "@/components/common/Header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tags } from "lucide-react";
+import { Loader2 } from 'lucide-react';
+import { AddTagForm } from '@/components/tags/AddTagForm';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { deleteTag } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 export default function TagsPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const tagsQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'users', user.uid, 'tags'), orderBy('name', 'asc')) : null
+  , [firestore, user]);
+
+  const { data: tags, isLoading: tagsLoading } = useCollection<Tag>(tagsQuery);
+  
+  const handleDelete = (tagId: string) => {
+    if (!user) return;
+    deleteTag(firestore, user.uid, tagId);
+    toast({ title: 'Tag removida' });
+  }
+
+  if (tagsLoading) {
+    return (
+        <>
+            <Header title="Tags" />
+            <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        </>
+    )
+  }
+
   return (
     <>
       <Header title="Tags" />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <Card className="flex flex-col items-center justify-center h-96 border-dashed">
-            <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <Tags className="h-8 w-8 text-primary" />
-                </div>
-                <CardTitle>Gerenciamento de Tags em Breve</CardTitle>
-                <CardDescription>Esta área está em desenvolvimento. Volte em breve para organizar suas transações com tags!</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">Você poderá criar, editar e excluir tags para agrupar suas despesas e receitas.</p>
-            </CardContent>
-        </Card>
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Suas Tags</CardTitle>
+                    <CardDescription>
+                        {tags && tags.length > 0 
+                            ? "Gerencie suas tags. Tags não podem ser removidas se estiverem em uso."
+                            : "Você ainda não tem nenhuma tag. Crie uma para começar a organizar."
+                        }
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {tags && tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {tags.map(tag => (
+                                <Badge key={tag.id} variant="secondary" className="text-sm py-1 pl-3 pr-1">
+                                    {tag.name}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-5 w-5 ml-1 rounded-full"
+                                        onClick={() => handleDelete(tag.id)}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </Badge>
+                            ))}
+                        </div>
+                    ) : (
+                         <p className="text-sm text-muted-foreground">Nenhuma tag encontrada.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+        <div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Nova Tag</CardTitle>
+                    <CardDescription>Adicione uma nova tag para organizar suas transações.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <AddTagForm />
+                </CardContent>
+            </Card>
+        </div>
       </main>
     </>
   );

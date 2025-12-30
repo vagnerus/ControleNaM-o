@@ -30,15 +30,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { saveTransaction, getIconComponent } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
-import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
+import type { Category, CreditCard, Account, Transaction, Tag } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { Checkbox } from "../ui/checkbox";
 import { collection, query, where } from "firebase/firestore";
+import { Badge } from "../ui/badge";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -58,6 +59,7 @@ const formSchema = z.object({
   creditCardId: z.string().optional(),
   isInstallment: z.boolean().default(false),
   totalInstallments: z.coerce.number().optional(),
+  tagIds: z.array(z.string()).optional(),
 });
 
 type AddTransactionFormProps = {
@@ -77,11 +79,13 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       description: "",
       date: new Date(),
       isInstallment: false,
+      tagIds: [],
     },
   });
 
   const transactionType = form.watch("type");
   const isInstallment = form.watch("isInstallment");
+  const selectedTagIds = form.watch("tagIds") || [];
 
   // Fetch user's custom categories
   const categoriesQuery = useMemoFirebase(() => 
@@ -99,12 +103,18 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   , [firestore, user]);
   const { data: accounts } = useCollection<Account>(accountsQuery);
 
+  const tagsQuery = useMemoFirebase(() =>
+    user ? collection(firestore, 'users', user.uid, 'tags') : null
+  , [firestore, user]);
+  const { data: tags } = useCollection<Tag>(tagsQuery);
+
   useEffect(() => {
     if (transaction) {
       form.reset({
         ...transaction,
         date: new Date(transaction.date),
         isInstallment: transaction.totalInstallments ? transaction.totalInstallments > 1 : false,
+        tagIds: transaction.tagIds || [],
       });
     }
   }, [transaction, form]);
@@ -168,6 +178,14 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             description: "Não foi possível salvar a transação.",
         });
     }
+  }
+  
+  const toggleTag = (tagId: string) => {
+    const currentTags = form.getValues('tagIds') || [];
+    const newTags = currentTags.includes(tagId) 
+        ? currentTags.filter(id => id !== tagId)
+        : [...currentTags, tagId];
+    form.setValue('tagIds', newTags, { shouldValidate: true });
   }
 
   return (
@@ -376,7 +394,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
@@ -389,6 +407,54 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             </FormItem>
           )}
         />
+
+        <FormField
+            control={form.control}
+            name="tagIds"
+            render={() => (
+                <FormItem>
+                    <FormLabel>Tags (Opcional)</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button variant="outline" role="combobox" className="w-full justify-start font-normal h-auto min-h-10">
+                                    {selectedTagIds.length > 0 ? (
+                                        <div className="flex gap-1 flex-wrap">
+                                            {selectedTagIds.map(tagId => {
+                                                const tag = tags?.find(t => t.id === tagId);
+                                                return <Badge key={tagId} variant="secondary">{tag?.name}</Badge>
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <span className="text-muted-foreground">Selecione uma ou mais tags</span>
+                                    )}
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <div className="flex flex-wrap gap-2 p-4">
+                                {tags?.map(tag => (
+                                    <Button
+                                        key={tag.id}
+                                        variant={selectedTagIds.includes(tag.id) ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="h-auto"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            toggleTag(tag.id);
+                                        }}
+                                    >
+                                        {tag.name}
+                                    </Button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar

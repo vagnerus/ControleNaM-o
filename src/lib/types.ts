@@ -12,6 +12,7 @@ export type Transaction = {
   installmentId?: string; // ID to group installments
   installmentNumber?: number;
   totalInstallments?: number;
+  tagIds?: string[];
 };
 
 export type Category = {
@@ -58,4 +59,9 @@ export type Icon = {
   id: string;
   name: string;
   component: LucideIcon;
+};
+
+export type Tag = {
+    id: string;
+    name: string;
 };

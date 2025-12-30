@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Transaction, Account, Category } from "@/lib/types";
+import type { Transaction, Account, Category, Tag } from "@/lib/types";
 import { deleteTransaction, getIconComponent } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -54,8 +54,18 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
     , [firestore, user]);
     const { data: categories } = useCollection<Category>(categoriesQuery);
 
+    const tagsQuery = useMemoFirebase(() =>
+        user ? query(collection(firestore, 'users', user.uid, 'tags')) : null
+    , [firestore, user]);
+    const { data: tags } = useCollection<Tag>(tagsQuery);
+
+
     const getCategory = (categoryId: string) => {
         return categories?.find(cat => cat.id === categoryId);
+    }
+
+    const getTags = (tagIds: string[] = []) => {
+        return tags?.filter(tag => tagIds.includes(tag.id)) || [];
     }
 
     const formatCurrency = (value: number) =>
@@ -112,6 +122,7 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
           {transactions.map((transaction) => {
             const category = getCategory(transaction.categoryId);
             const Icon = category ? getIconComponent(category.icon) : null;
+            const transactionTags = getTags(transaction.tagIds);
             return (
               <TableRow key={transaction.id}>
                 <TableCell className="hidden sm:table-cell">
@@ -130,11 +141,16 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
                    <div className="text-sm text-muted-foreground md:hidden">
                     {getAccountName(transaction.accountId)} - {format(new Date(transaction.date), "dd/MM/yyyy")}
                   </div>
-                  {transaction.totalInstallments && transaction.totalInstallments > 1 && (
-                    <Badge variant="secondary" className="mt-1">
-                        Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {transaction.totalInstallments && transaction.totalInstallments > 1 && (
+                        <Badge variant="secondary">
+                            Parcela {transaction.installmentNumber}/{transaction.totalInstallments}
+                        </Badge>
+                    )}
+                     {transactionTags.map(tag => (
+                         <Badge key={tag.id} variant="outline" className="font-normal">{tag.name}</Badge>
+                     ))}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {getAccountName(transaction.accountId)}
