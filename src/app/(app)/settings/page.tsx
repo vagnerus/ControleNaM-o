@@ -6,6 +6,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ConnectedDevices } from "@/components/settings/ConnectedDevices";
 import { DashboardSettingsForm } from "@/components/settings/DashboardSettingsForm";
 import { NotificationsSettingsForm } from "@/components/settings/NotificationsSettingsForm";
+import { PreferencesForm } from "@/components/settings/PreferencesForm";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -29,7 +30,7 @@ export default function SettingsPage() {
     <>
       <Header title="Configurações" />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <Tabs defaultValue="security">
+        <Tabs defaultValue="preferences">
           <TabsList className="grid w-full grid-cols-4 md:w-fit">
             <TabsTrigger value="preferences">Preferências</TabsTrigger>
             <TabsTrigger value="notifications">Alertas e notificações</TabsTrigger>
@@ -40,7 +41,7 @@ export default function SettingsPage() {
             <DashboardSettingsForm />
           </TabsContent>
           <TabsContent value="preferences" className="mt-6">
-            <PlaceholderTabContent title="Preferências" />
+            <PreferencesForm />
           </TabsContent>
           <TabsContent value="notifications" className="mt-6">
             <NotificationsSettingsForm />
