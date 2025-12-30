@@ -72,7 +72,7 @@ export function CategoryChart({ data }: CategoryChartProps) {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto aspect-square h-[250px]"
+      className="mx-auto aspect-square max-h-[400px]"
     >
       <PieChart>
         <ChartTooltip

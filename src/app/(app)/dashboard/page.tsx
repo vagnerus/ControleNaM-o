@@ -19,7 +19,7 @@ import { GoalCard } from "@/components/goals/GoalCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2, Landmark } from "lucide-react";
-import { CategoryChart } from "@/components/dashboard/CategoryChart";
+import { CategoryChart } from "@/components/charts/CategoryChart";
 import { AccountCard } from '@/components/accounts/AccountCard';
 
 export default function DashboardPage() {
