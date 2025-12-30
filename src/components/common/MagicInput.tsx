@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, forwardRef } from 'react';
@@ -14,44 +15,41 @@ const formatCurrency = (value: number | null | undefined): string => {
   if (value === null || value === undefined || isNaN(value)) {
     return '';
   }
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
+  // This formats the number into a string like "1.234,56" for pt-BR
+  return value.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  });
 };
 
 const parseInputValue = (value: string): number => {
   if (!value) return 0;
-  // Remove R$, thousand separators, and replace comma with dot
-  const cleanedValue = value
-    .replace(/R\$\s?/, '')
-    .replace(/\./g, '')
-    .replace(/,/, '.');
   
-  if (/^[0-9,.\-+*/\s()]+$/.test(cleanedValue)) {
-    try {
-      // Use a Function constructor for safe evaluation
+  // Clean the string: remove thousand separators and replace comma with dot
+  const cleanedValue = value.replace(/\./g, '').replace(/,/, '.');
+  
+  try {
+    // Safely evaluate simple math expressions
+    // Use a stricter regex to allow only numbers, comma, dot, and basic operators
+    if (/^[\d,.\-+*/\s()]+$/.test(cleanedValue)) {
       // eslint-disable-next-line no-new-func
-      const result = new Function(`return ${cleanedValue}`)();
+      const result = new Function(`return ${cleanedValue.replace(/,/g, '.').replace(/(?![.])[^\d*+\-/().]/g, '')}`)();
       if (typeof result === 'number' && !isNaN(result)) {
         return parseFloat(result.toFixed(2));
       }
-    } catch (error) {
-        // Fallback to simple parsing if evaluation fails
-        const numericValue = parseFloat(cleanedValue);
-        return isNaN(numericValue) ? 0 : numericValue;
     }
+  } catch (error) {
+     // Fallback if evaluation fails
   }
-  
+
+  // Fallback for simple number parsing
   const numericValue = parseFloat(cleanedValue);
   return isNaN(numericValue) ? 0 : numericValue;
 };
 
 
 export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
-  ({ value, onChange, onBlur, ...props }, ref) => {
+  ({ value, onChange, onBlur, className, ...props }, ref) => {
     const [displayValue, setDisplayValue] = useState<string>(formatCurrency(value) || '');
     const [isEditing, setIsEditing] = useState(false);
 
@@ -63,15 +61,14 @@ export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
 
     const handleFocus = () => {
       setIsEditing(true);
-      // Show the raw number for editing, replacing comma with dot for consistency
+      // Show the raw number for editing, using comma as decimal separator for pt-BR
       const rawValue = String(value).replace('.', ',');
       setDisplayValue(rawValue === '0' ? '' : rawValue);
     };
 
     const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
       setIsEditing(false);
-      const rawValue = event.target.value.replace('.',',');
-      const calculatedValue = parseInputValue(rawValue);
+      const calculatedValue = parseInputValue(event.target.value);
       onChange(calculatedValue);
       setDisplayValue(formatCurrency(calculatedValue));
       if (onBlur) {
@@ -81,6 +78,7 @@ export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
     
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = event.target.value;
+        // Allow numbers, comma, and math operators
         const sanitized = rawValue.replace(/[^0-9,\-+*/.]/g, '');
         setDisplayValue(sanitized);
     };
@@ -97,7 +95,7 @@ export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}
-          className={cn(!isEditing && "pl-9")}
+          className={cn(!isEditing && "pl-9 text-right", className)}
           {...props}
         />
       </div>

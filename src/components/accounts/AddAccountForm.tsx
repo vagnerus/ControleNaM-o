@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
 import type { Account } from "@/lib/types";
 import { useEffect } from "react";
+import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome da conta é muito curto."),
@@ -64,7 +65,15 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
     }
 
     try {
-        saveAccount(firestore, user.uid, values, account?.id);
+        const payload: Partial<Omit<Account, 'id'>> = {
+            name: values.name
+        };
+        // Only set balance on creation, not on update.
+        if (!account) {
+            payload.balance = values.balance;
+        }
+
+        await saveAccount(firestore, user.uid, payload, account?.id);
         toast({
             title: "Sucesso!",
             description: account ? "Conta atualizada com sucesso." : "Conta adicionada com sucesso.",
@@ -104,7 +113,13 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
             <FormItem>
               <FormLabel>Saldo {account ? 'Atual' : 'Inicial'}</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Ex: 1000.00" {...field} disabled={!!account} />
+                 <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="1000,00"
+                    disabled={!!account}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -31,9 +31,9 @@ import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome do cartão é muito curto."),
-  last4: z.string().length(4, "Digite os 4 últimos dígitos."),
-  closingDate: z.coerce.number().min(1).max(31, "Dia inválido."),
-  dueDate: z.coerce.number().min(1).max(31, "Dia inválido."),
+  last4: z.string().length(4, "Digite os 4 últimos dígitos.").regex(/^\d{4}$/, "Apenas números."),
+  closingDate: z.coerce.number().min(1, "Dia inválido.").max(31, "Dia inválido."),
+  dueDate: z.coerce.number().min(1, "Dia inválido.").max(31, "Dia inválido."),
   limit: z.coerce.number().positive("O limite deve ser positivo."),
   brand: z.enum(["visa", "mastercard", "amex", "other"], {
     required_error: "A bandeira é obrigatória.",
@@ -53,9 +53,12 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      last4: "",
-      limit: 0,
+      name: card?.name || "",
+      last4: card?.last4 || "",
+      limit: card?.limit || 0,
+      closingDate: card?.closingDate,
+      dueDate: card?.dueDate,
+      brand: card?.brand
     },
   });
 
@@ -83,7 +86,7 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
     }
 
     try {
-        saveCard(firestore, user.uid, values, card?.id);
+        await saveCard(firestore, user.uid, values, card?.id);
         toast({
             title: "Sucesso!",
             description: card ? "Cartão atualizado com sucesso." : "Cartão adicionado com sucesso.",
@@ -102,7 +105,7 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
         <FormField
           control={form.control}
           name="name"
@@ -165,7 +168,7 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
                     value={field.value}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    placeholder="5000,00"
+                    placeholder="5.000,00"
                 />
               </FormControl>
               <FormMessage />

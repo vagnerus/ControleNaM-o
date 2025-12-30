@@ -1,10 +1,35 @@
 
 'use client';
 
-import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal } from '@/lib/types';
-import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch } from 'firebase/firestore';
+import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal, Tag } from '@/lib/types';
+import { addDoc, collection, Firestore, doc, deleteDoc, runTransaction, increment, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import * as lucide from "lucide-react"
+
+export const ICONS = Object.keys(lucide).filter(key => typeof (lucide as any)[key] === 'object' && 'displayName' in (lucide as any)[key]).map(key => ({
+    id: key,
+    name: key,
+    component: (lucide as any)[key]
+}));
+
+export const getIconComponent = (name: string): React.ComponentType<any> => {
+    const icon = ICONS.find(i => i.name === name);
+    return icon ? icon.component : lucide.HelpCircle;
+}
+
+export const isCategoryInUse = async (firestore: Firestore, userId: string, categoryId: string): Promise<boolean> => {
+    const transactionsQuery = query(collection(firestore, `users/${userId}/transactions`), where('categoryId', '==', categoryId));
+    const budgetsQuery = query(collection(firestore, `users/${userId}/budgets`), where('categoryId', '==', categoryId));
+
+    const [transactionsSnap, budgetsSnap] = await Promise.all([
+        getDocs(transactionsQuery),
+        getDocs(budgetsQuery),
+    ]);
+
+    return !transactionsSnap.empty || !budgetsSnap.empty;
+};
+
 
 export const getCategoryDetails = (name: string, categories: Category[]): Partial<Category> => {
     const category = categories.find(c => c.name === name);
@@ -23,6 +48,23 @@ export const saveTransaction = (
     throw new Error('User must be authenticated.');
   }
 
+  // Do not update account balance if transaction is on a credit card
+  if (transactionData.creditCardId) {
+      const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
+      const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
+      
+      const operation = transactionId ? updateDoc(newDocRef, transactionData) : addDoc(transactionsCollection, transactionData);
+
+      return operation.catch(error => {
+          const path = transactionId ? newDocRef.path : transactionsCollection.path;
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: path,
+              operation: transactionId ? 'update' : 'create',
+              requestResourceData: transactionData,
+          }));
+      });
+  }
+
   return runTransaction(firestore, async (tx) => {
     const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
     const newDocRef = transactionId ? doc(transactionsCollection, transactionId) : doc(transactionsCollection);
@@ -36,16 +78,18 @@ export const saveTransaction = (
     }
 
     // Revert old balance if it's an update
-    if (oldTransactionData) {
+    if (oldTransactionData && !oldTransactionData.creditCardId) {
         const oldAccountRef = doc(firestore, 'users', userId, 'accounts', oldTransactionData.accountId);
         const oldBalanceChange = oldTransactionData.type === 'income' ? -oldTransactionData.amount : oldTransactionData.amount;
         tx.update(oldAccountRef, { balance: increment(oldBalanceChange) });
     }
 
-    // Apply new balance change
-    const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
-    const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
-    tx.update(newAccountRef, { balance: increment(newBalanceChange) });
+    // Apply new balance change if it's not a credit card transaction
+    if (!transactionData.creditCardId) {
+        const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
+        const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+        tx.update(newAccountRef, { balance: increment(newBalanceChange) });
+    }
     
     tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
 
@@ -74,9 +118,12 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
         }
         const transaction = transactionSnapshot.data() as Transaction;
         
-        const accountRef = doc(firestore, 'users', userId, 'accounts', transaction.accountId);
-        const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
-        tx.update(accountRef, { balance: increment(balanceChange) });
+        // Only adjust balance if it's not a credit card transaction
+        if (!transaction.creditCardId) {
+            const accountRef = doc(firestore, 'users', userId, 'accounts', transaction.accountId);
+            const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
+            tx.update(accountRef, { balance: increment(balanceChange) });
+        }
         
         tx.delete(transactionDoc);
     }).catch(error => {
@@ -87,7 +134,7 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
     });
 };
 
-export const saveCard = (
+export const saveCard = async (
   firestore: Firestore,
   userId: string,
   cardData: Omit<CreditCard, 'id'>,
@@ -128,37 +175,42 @@ export const deleteCard = (
   if (!userId) {
     throw new Error('User must be authenticated to delete a card.');
   }
-  const cardDoc = doc(firestore, 'users', userId, 'creditCards', cardId);
   
-  // TODO: Add logic to delete associated transactions or handle them
-  
-  return deleteDoc(cardDoc)
-    .catch(error => {
-      console.error("Error deleting card: ", error);
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
-          path: cardDoc.path,
-          operation: 'delete',
-        })
-      );
+  const cardDocRef = doc(firestore, 'users', userId, 'creditCards', cardId);
+  const transactionsQuery = query(collection(firestore, 'users', userId, 'transactions'), where('creditCardId', '==', cardId));
+
+  return runTransaction(firestore, async (transaction) => {
+    // 1. Get all transactions associated with the card
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+
+    // 2. Delete each of those transactions
+    transactionsSnapshot.forEach(doc => {
+      transaction.delete(doc.ref);
     });
+
+    // 3. Delete the card itself
+    transaction.delete(cardDocRef);
+  }).catch(error => {
+    console.error("Error deleting card and its transactions: ", error);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+      path: cardDocRef.path,
+      operation: 'delete',
+    }));
+  });
 }
 
 export const saveAccount = (
   firestore: Firestore,
   userId: string,
-  accountData: Omit<Account, 'id'>,
+  accountData: Partial<Omit<Account, 'id'>>,
   accountId?: string
-) => {
+): Promise<any> => {
   if (!userId) {
     throw new Error('User must be authenticated.');
   }
   
   if (accountId) {
     const accountDoc = doc(firestore, 'users', userId, 'accounts', accountId);
-    // Be careful with balance updates. This assumes the form provides the *new* total balance.
-    // A more robust solution for balance would be to calculate it based on transactions.
     return updateDoc(accountDoc, accountData).catch(error => {
       console.error("Error updating account: ", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -166,6 +218,7 @@ export const saveAccount = (
         operation: 'update',
         requestResourceData: accountData,
       }));
+      throw error;
     });
   } else {
     const accountsCollection = collection(firestore, 'users', userId, 'accounts');
@@ -176,6 +229,7 @@ export const saveAccount = (
         operation: 'create',
         requestResourceData: accountData,
       }));
+      throw error;
     });
   }
 };
@@ -267,7 +321,7 @@ export const saveCategory = (
   userId: string,
   categoryData: Omit<Category, 'id'>,
   categoryId?: string
-) => {
+): Promise<any> => {
   if (!userId) {
     throw new Error('User must be authenticated.');
   }
@@ -281,6 +335,7 @@ export const saveCategory = (
         operation: 'update',
         requestResourceData: categoryData,
       }));
+      throw error;
     });
   } else {
     const categoriesCollection = collection(firestore, 'users', userId, 'categories');
@@ -291,6 +346,7 @@ export const saveCategory = (
         operation: 'create',
         requestResourceData: categoryData,
       }));
+      throw error;
     });
   }
 };
@@ -320,17 +376,19 @@ export const deleteCategory = (
 
 
 // Tag Functions
-export const saveTag = (firestore: Firestore, userId: string, tagData: Omit<Tag, 'id'>, tagId?: string) => {
+export const saveTag = (firestore: Firestore, userId: string, tagData: Omit<Tag, 'id'>, tagId?: string): Promise<any> => {
   if (!userId) throw new Error("User must be authenticated.");
   if (tagId) {
     const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);
     return updateDoc(tagDoc, tagData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'update', requestResourceData: tagData }));
+      throw error;
     });
   } else {
     const tagsCollection = collection(firestore, 'users', userId, 'tags');
     return addDoc(tagsCollection, tagData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagsCollection.path, operation: 'create', requestResourceData: tagData }));
+      throw error;
     });
   }
 };

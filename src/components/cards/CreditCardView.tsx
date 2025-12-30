@@ -1,3 +1,4 @@
+
 'use client';
 import type { Account, Category, CreditCard, Tag, Transaction } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -38,7 +39,7 @@ type CreditCardViewProps = {
 
 const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
     // In a real app, these would be proper logo components or images
-    if (brand === 'visa') return <div className="font-bold text-lg italic text-blue-800">VISA</div>
+    if (brand === 'visa') return <div className="font-bold text-lg italic text-blue-800 dark:text-blue-300">VISA</div>
     if (brand === 'mastercard') return <div className="font-bold text-lg italic text-orange-500">Mastercard</div>
     if (brand === 'amex') return <div className="font-bold text-lg text-blue-600">AMEX</div>
     return <div className="font-bold text-lg">CARD</div>;

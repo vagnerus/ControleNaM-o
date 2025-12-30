@@ -38,6 +38,7 @@ import type { Category, CreditCard, Account, Transaction } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
+import { MagicInput } from "../common/MagicInput";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -74,6 +75,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
       amount: 0,
       description: "",
       date: new Date(),
+      creditCardId: ""
     },
   });
 
@@ -101,14 +103,20 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         ...transaction,
         amount: transaction.amount || 0,
         date: new Date(transaction.date),
+        creditCardId: transaction.creditCardId || ""
       });
     }
   }, [transaction, form]);
 
 
   useEffect(() => {
+    // Reset category when transaction type changes
     if (form.getValues('type') !== transactionType) {
         form.setValue("categoryId", "");
+    }
+    // Reset credit card if type changes to income
+    if (transactionType === 'income') {
+        form.setValue('creditCardId', '');
     }
   }, [transactionType, form]);
 
@@ -129,7 +137,8 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     try {
         saveTransaction(firestore, user.uid, { 
             ...values,
-            date: values.date.toISOString() 
+            date: values.date.toISOString(),
+            creditCardId: values.creditCardId || undefined
         }, transaction?.id);
         toast({
             title: "Sucesso!",
@@ -148,14 +157,14 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
         <FormField
           control={form.control}
           name="type"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo de Transação</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -177,7 +186,12 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
             <FormItem>
               <FormLabel>Valor</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Ex: 50.00" {...field} />
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="0,00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -239,7 +253,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Cartão de Crédito (Opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Nenhum" />

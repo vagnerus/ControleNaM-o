@@ -14,7 +14,7 @@ export type Transaction = {
 export type Category = {
   id: string;
   name: string;
-  icon?: string; // Lucide icon name as string
+  icon: string; // Lucide icon name as string
   type: 'income' | 'expense';
 };
 
