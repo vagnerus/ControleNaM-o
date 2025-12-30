@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Category, Transaction, CreditCard, Account, Budget, FinancialGoal } from '@/lib/types';
