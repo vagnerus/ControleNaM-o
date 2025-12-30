@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -317,6 +318,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                                 <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                    disabled={!!transaction}
                                 />
                             </FormControl>
                         </FormItem>
@@ -330,7 +332,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                             <FormItem>
                                 <FormLabel>Número de Parcelas</FormLabel>
                                 <FormControl>
-                                    <Input type="number" min="2" placeholder="Ex: 12" {...field} />
+                                    <Input type="number" min="2" placeholder="Ex: 12" {...field} disabled={!!transaction} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

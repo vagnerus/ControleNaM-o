@@ -12,6 +12,7 @@ export type Transaction = {
   tagIds?: string[];
   isInstallment?: boolean; // Is this transaction an installment payment?
   totalInstallments?: number; // Total number of installments for a purchase
+  originalPurchaseId?: string; // Link to the original purchase transaction for installments
 };
 
 export type Category = {

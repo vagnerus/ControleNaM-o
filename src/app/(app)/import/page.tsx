@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -18,8 +19,6 @@ type ParsedTransaction = Partial<Omit<Transaction, 'id' | 'accountId' | 'categor
     categoryName: string;
     accountName: string;
     cardName?: string;
-    isInstallment: boolean;
-    totalInstallments?: number;
     rawRow: string;
 };
 
@@ -60,11 +59,8 @@ export default function ImportPage() {
                         const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, ''));
                         if (!values || values.length < 9) return null;
 
-                        const [date, description, amount, type, categoryName, accountName, cardName, isInstallment, totalInstallments] = values;
+                        const [date, description, amount, type, categoryName, accountName, cardName, isInstallmentStr, totalInstallmentsStr] = values;
                         
-                        // Detect original purchase from installments and skip it
-                        if (description.includes('(Compra Original)')) return null;
-
                         return {
                             date,
                             description,
@@ -73,25 +69,14 @@ export default function ImportPage() {
                             categoryName: categoryName,
                             accountName: accountName,
                             cardName: cardName || undefined,
-                            isInstallment: isInstallment === 'SIM',
-                            totalInstallments: isInstallment === 'SIM' ? parseInt(totalInstallments, 10) : undefined,
+                            isInstallment: isInstallmentStr === 'SIM',
+                            totalInstallments: isInstallmentStr === 'SIM' ? parseInt(totalInstallmentsStr, 10) : undefined,
                             rawRow: row,
                         };
                     }).filter((t): t is ParsedTransaction => t !== null);
 
-                // Filter out individual installments if the main purchase is present
-                const installmentDescriptions = new Set(transactions.filter(t => t.isInstallment).map(t => t.description.split(' (')[0]));
-                const finalTransactions = transactions.filter(t => {
-                    if (t.isInstallment) {
-                         const baseDesc = t.description.split(' (')[0];
-                         return t.description.includes(' (1/') || !installmentDescriptions.has(baseDesc);
-                    }
-                    return true;
-                });
-
-
-                setParsedTransactions(finalTransactions);
-                toast({ title: 'Arquivo processado!', description: `${finalTransactions.length} transações prontas para importação.` });
+                setParsedTransactions(transactions);
+                toast({ title: 'Arquivo processado!', description: `${transactions.length} transações prontas para importação.` });
             } catch (error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Erro ao processar', description: 'O arquivo CSV parece estar mal formatado.' });
@@ -140,21 +125,31 @@ export default function ImportPage() {
             for (const t of parsedTransactions) {
                 let accountId = accountsMap.get(t.accountName);
                 if (!accountId) {
-                    const newAccount = await saveAccount(firestore, user.uid, { name: t.accountName, balance: 0, icon: 'Landmark' });
+                    const newAccountDoc = await saveAccount(firestore, user.uid, { name: t.accountName, balance: 0, icon: 'Landmark' });
+                    const newAccount = { id: newAccountDoc.id, name: t.accountName };
+                    accountsMap.set(t.accountName, newAccount.id!);
                     accountId = newAccount.id;
-                    accountsMap.set(t.accountName, accountId!);
                 }
 
                 let categoryId = categoriesMap.get(t.categoryName);
                 if (!categoryId) {
-                    const newCategory = await saveCategory(firestore, user.uid, { name: t.categoryName, type: t.type!, icon: 'Receipt' });
+                    const newCategoryDoc = await saveCategory(firestore, user.uid, { name: t.categoryName, type: t.type!, icon: 'Receipt' });
+                    const newCategory = { id: newCategoryDoc.id, name: t.categoryName };
+                    categoriesMap.set(t.categoryName, newCategory.id!);
                     categoryId = newCategory.id;
-                    categoriesMap.set(t.categoryName, categoryId!);
                 }
                 
                 let creditCardId: string | undefined = undefined;
                 if(t.cardName) {
                     creditCardId = cardsMap.get(t.cardName);
+                     if (!creditCardId) {
+                        // This part is tricky as we don't have all card details in the CSV
+                        // We create a placeholder card. The user should edit it later.
+                        const newCardDoc = await saveCard(firestore, user.uid, { name: t.cardName, last4: '0000', limit: 0, closingDate: 1, dueDate: 10, brand: 'other' });
+                        const newCard = { id: newCardDoc.id, name: t.cardName };
+                        cardsMap.set(t.cardName, newCard.id!);
+                        creditCardId = newCard.id;
+                    }
                 }
 
 
@@ -260,7 +255,7 @@ export default function ImportPage() {
                                                 <TableCell>{t.accountName}</TableCell>
                                                 <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
                                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount!)}
-                                                    {t.isInstallment && <span className="text-xs text-muted-foreground ml-1"> (1/{t.totalInstallments})</span>}
+                                                    {t.isInstallment && <span className="text-xs text-muted-foreground ml-1"> (Parcelado)</span>}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

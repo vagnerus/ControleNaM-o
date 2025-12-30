@@ -79,24 +79,18 @@ export const saveTransaction = (
   }
 
   // If it's a new, installment-based purchase, create installments
-  if (transactionData.isInstallment && transactionData.totalInstallments && transactionData.creditCardId && !transactionId) {
+  if (transactionData.isInstallment && transactionData.totalInstallments && transactionData.totalInstallments > 1 && transactionData.creditCardId && !transactionId) {
     return runTransaction(firestore, async (tx) => {
       const purchaseAmount = transactionData.amount;
       const installmentAmount = parseFloat((purchaseAmount / transactionData.totalInstallments!).toFixed(2));
       const purchaseDate = new Date(transactionData.date);
 
-      // 1. Save the original purchase transaction (for record keeping)
+      // Create a reference for the original purchase transaction for linking
       const purchaseTransactionRef = doc(collection(firestore, 'users', userId, 'transactions'));
-      tx.set(purchaseTransactionRef, {
-        ...transactionData,
-        amount: purchaseAmount,
-        description: `${transactionData.description} (Compra Original)`,
-        isInstallment: true,
-        totalInstallments: transactionData.totalInstallments,
-      });
-
+      
       // 2. Create individual installment transactions
       for (let i = 1; i <= transactionData.totalInstallments!; i++) {
+        // The first installment is on the purchase date, subsequent ones are in following months
         const installmentDate = addMonths(purchaseDate, i - 1);
         const installmentRef = doc(collection(firestore, 'users', userId, 'transactions'));
         tx.set(installmentRef, {
@@ -106,7 +100,7 @@ export const saveTransaction = (
           description: `${transactionData.description} (${i}/${transactionData.totalInstallments})`,
           isInstallment: true,
           totalInstallments: transactionData.totalInstallments,
-          originalPurchaseId: purchaseTransactionRef.id,
+          originalPurchaseId: purchaseTransactionRef.id, // Link to the original (virtual) purchase
         });
       }
     }).catch(error => {
