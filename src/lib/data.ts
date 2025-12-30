@@ -403,7 +403,7 @@ export const deleteTag = async (firestore: Firestore, userId: string, tagId: str
   const querySnapshot = await getDocs(transactionsQuery);
 
   if (!querySnapshot.empty) {
-    throw new Error("Tag is in use and cannot be deleted.");
+    throw new Error("A tag em uso não pode ser removida.");
   }
 
   const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);

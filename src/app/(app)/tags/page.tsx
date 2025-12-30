@@ -24,10 +24,18 @@ export default function TagsPage() {
 
   const { data: tags, isLoading: tagsLoading } = useCollection<Tag>(tagsQuery);
   
-  const handleDelete = (tagId: string) => {
+  const handleDelete = async (tagId: string) => {
     if (!user) return;
-    deleteTag(firestore, user.uid, tagId);
-    toast({ title: 'Tag removida' });
+    try {
+      await deleteTag(firestore, user.uid, tagId);
+      toast({ title: 'Tag removida' });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao remover tag',
+        description: error.message || 'Não foi possível remover a tag. Verifique se ela não está em uso.'
+      });
+    }
   }
 
   if (tagsLoading) {
@@ -51,7 +59,7 @@ export default function TagsPage() {
                     <CardTitle>Suas Tags</CardTitle>
                     <CardDescription>
                         {tags && tags.length > 0 
-                            ? "Gerencie suas tags. Tags não podem ser removidas se estiverem em uso."
+                            ? "Gerencie suas tags. Tags em uso não podem ser removidas."
                             : "Você ainda não tem nenhuma tag. Crie uma para começar a organizar."
                         }
                     </CardDescription>
