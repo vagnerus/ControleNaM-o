@@ -369,7 +369,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
@@ -558,3 +559,4 @@
     "reasoning": "The Firestore structure is designed to ensure Authorization Independence, DBAC, and support secure list operations (QAPs). User-owned data is structured under `/users/{userId}`. Authorization independence is achieved by avoiding `get()` calls in security rules. For instance, data like `transactions`, `categories`, and `budgets` are nested under the user's document, ensuring that access control can be based solely on the `request.auth.uid` and the path. Collaborative data is not present in this app.\n\nQAPs are supported through structural segregation. Each collection under `/users/{userId}` contains data with a homogeneous security posture, allowing straightforward security rules that don't filter data based on document content. Path-based ownership (`/users/{userId}/transactions/{transactionId}`) simplifies list operations, as rules can easily grant access to all documents under a user's path. The `UserAccount` document itself contains essential user data, and subcollections under each user hold their respective transactions, categories, budgets, credit cards, financial goals and tags."
   }
 }
+    

@@ -164,8 +164,8 @@ service cloud.firestore {
        */
       match /transactions/{transactionId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidOwnershipDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isOwnerFieldImmutable();
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
 
         /**
@@ -192,8 +192,8 @@ service cloud.firestore {
        */
       match /categories/{categoryId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidOwnershipDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isOwnerFieldImmutable();
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
       }
 
@@ -220,8 +220,8 @@ service cloud.firestore {
        */
       match /creditCards/{creditCardId} {
         allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidOwnershipDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isOwnerFieldImmutable();
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
       }
 
@@ -269,3 +269,4 @@ service cloud.firestore {
     }
   }
 }
+    
