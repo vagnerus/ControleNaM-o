@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useContext } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, limit, orderBy } from 'firebase/firestore';
 import type { Transaction, Budget, FinancialGoal, Account, Category } from '@/lib/types';
@@ -21,10 +21,12 @@ import Link from "next/link";
 import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2, Landmark } from "lucide-react";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import { AccountCard } from '@/components/accounts/AccountCard';
+import { SettingsContext } from '@/contexts/SettingsContext';
 
 export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const { settings } = useContext(SettingsContext);
 
   // Memoize Firestore queries
   const transactionsQuery = useMemoFirebase(() => 
@@ -119,116 +121,126 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Despesas por Categoria</CardTitle>
-                    <CardDescription>
-                      Visão geral dos seus gastos no mês.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pl-2">
-                    <CategoryChart data={spendingByCategory} />
-                  </CardContent>
-                </Card>
+           {settings['expenses-chart'] && (
+            <div className="lg:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Despesas por Categoria</CardTitle>
+                      <CardDescription>
+                        Visão geral dos seus gastos no mês.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                      <CategoryChart data={spendingByCategory} />
+                    </CardContent>
+                  </Card>
+              </div>
+           )}
+          {settings['accounts'] && (
+            <div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Contas</CardTitle>
+                    <CardDescription>Seus saldos atuais.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/accounts">
+                      Ver todas <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {accounts && accounts.length > 0 ? (
+                    accounts.slice(0, 3).map((account) => (
+                      <AccountCard key={account.id} account={account} isCompact />
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          <div>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Contas</CardTitle>
-                  <CardDescription>Seus saldos atuais.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/accounts">
-                    Ver todas <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {accounts && accounts.length > 0 ? (
-                  accounts.slice(0, 3).map((account) => (
-                    <AccountCard key={account.id} account={account} isCompact />
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+          {settings['pending-transactions'] && (
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Transações Recentes</CardTitle>
+                    <CardDescription>
+                      Suas últimas 5 movimentações.
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/transactions">
+                      Ver todas <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <TransactionList transactions={recentTransactions || []} accounts={accounts || []} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+           {settings['budget-summary'] && (
+            <div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Planejamento</CardTitle>
+                    <CardDescription>Seu progresso de gastos este mês.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/budgets">
+                      Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {budgets && budgets.length > 0 ? (
+                    budgets.slice(0, 2).map((budget) => (
+                      <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+                    ))
+                  ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </section>
+
+        {settings['goals'] && (
+          <section>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Transações Recentes</CardTitle>
-                  <CardDescription>
-                    Suas últimas 5 movimentações.
-                  </CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/transactions">
-                    Ver todas <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                  <div>
+                      <CardTitle>Objetivos Financeiros</CardTitle>
+                      <CardDescription>Acompanhe seu progresso para realizar seus sonhos.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/goals">
+                      Ver todos <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
               </CardHeader>
-              <CardContent>
-                <TransactionList transactions={recentTransactions || []} accounts={accounts || []} />
-              </CardContent>
-            </Card>
-          </div>
-           <div>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Planejamento</CardTitle>
-                  <CardDescription>Seu progresso de gastos este mês.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/budgets">
-                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {budgets && budgets.length > 0 ? (
-                  budgets.slice(0, 2).map((budget) => (
-                    <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {goals && goals.length > 0 ? (
+                  goals.slice(0, 3).map((goal) => (
+                    <GoalCard key={goal.id} goal={goal} />
                   ))
                 ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
+                  <p className="text-sm text-muted-foreground col-span-full">Nenhum objetivo encontrado.</p>
                 )}
               </CardContent>
             </Card>
-          </div>
-        </section>
-
-        <section>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Objetivos Financeiros</CardTitle>
-                    <CardDescription>Acompanhe seu progresso para realizar seus sonhos.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/goals">
-                    Ver todos <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {goals && goals.length > 0 ? (
-                goals.slice(0, 3).map((goal) => (
-                  <GoalCard key={goal.id} goal={goal} />
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground col-span-full">Nenhum objetivo encontrado.</p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
+          </section>
+        )}
       </main>
     </div>
   );
