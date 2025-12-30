@@ -153,9 +153,9 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                 <Popover>
                     <PopoverTrigger asChild>
                         <FormControl>
-                            <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>
+                            <Button variant="outline" role="combobox" className={cn("w-full justify-start", !field.value && "text-muted-foreground")}>
                                 <div className="flex items-center gap-2">
-                                    <SelectedIcon />
+                                    <SelectedIcon className="h-4 w-4" />
                                     {field.value}
                                 </div>
                             </Button>
@@ -163,7 +163,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
                        <ScrollArea className="h-72">
-                         <div className="grid grid-cols-4 gap-2 p-4">
+                         <div className="grid grid-cols-5 gap-2 p-4">
                             {ICONS.map((icon) => {
                                 const IconComponent = icon.component;
                                 return (
@@ -177,7 +177,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                                             form.setValue('icon', icon.name, { shouldValidate: true });
                                         }}
                                     >
-                                        <IconComponent />
+                                        <IconComponent className="h-5 w-5" />
                                     </Button>
                                 )
                             })}

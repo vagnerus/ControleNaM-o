@@ -239,8 +239,7 @@
         "name",
         "closingDate",
         "dueDate",
-        "creditLimit",
-        "availableLimit"
+        "creditLimit"
       ]
     },
     "Budget": {
