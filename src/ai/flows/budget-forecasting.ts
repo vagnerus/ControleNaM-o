@@ -13,19 +13,19 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const BudgetForecastingInputSchema = z.object({
-  monthlyIncome: z.number().describe('The user\'s total monthly income.'),
-  spendingByCategory: z.record(z.string(), z.number()).describe('A map of spending amounts for each category (e.g., {\"Food\": 500, \"Transportation\": 200}).'),
-  budgetByCategory: z.record(z.string(), z.number()).describe('A map of budget amounts for each category (e.g., {\"Food\": 600, \"Transportation\": 250}).'),
+  monthlyIncome: z.number().describe("The user's total monthly income."),
+  spendingByCategory: z.record(z.string(), z.number()).describe('A map of spending amounts for each category for the current month (e.g., {"Comida": 500, "Transporte": 200}).'),
+  budgetByCategory: z.record(z.string(), z.number()).describe('A map of budget amounts for each category (e.g., {"Comida": 600, "Transporte": 250}).'),
   financialGoal: z.object({
-    goalName: z.string().describe('The name of the financial goal (e.g., \"Buy a Car\").'),
+    goalName: z.string().describe('The name of the financial goal (e.g., "Comprar um Carro").'),
     goalAmount: z.number().describe('The total amount needed for the goal.'),
     monthlySaving: z.number().describe('The current monthly saving amount towards the goal.'),
-  }).optional().describe('The user\'s financial goal.'),
+  }).optional().describe("The user's primary financial goal."),
 });
 export type BudgetForecastingInput = z.infer<typeof BudgetForecastingInputSchema>;
 
 const BudgetForecastingOutputSchema = z.object({
-  forecast: z.string().describe('A detailed forecast of potential overspending, along with suggested adjustments to stay on track with financial goals.'),
+  forecast: z.string().describe('A detailed forecast of potential overspending, along with suggested adjustments to stay on track with financial goals. The response must be in pt-BR.'),
 });
 export type BudgetForecastingOutput = z.infer<typeof BudgetForecastingOutputSchema>;
 
@@ -37,18 +37,31 @@ const budgetForecastingPrompt = ai.definePrompt({
   name: 'budgetForecastingPrompt',
   input: {schema: BudgetForecastingInputSchema},
   output: {schema: BudgetForecastingOutputSchema},
-  prompt: `You are a personal finance advisor. Analyze the user's income, spending habits, and budget to forecast potential overspending and suggest adjustments.
+  prompt: `Você é um consultor financeiro pessoal e seu objetivo é ajudar o usuário a ter um controle financeiro saudável. Analise a renda mensal, os gastos por categoria e o orçamento definido pelo usuário para o mês atual. Forneça uma previsão de gastos, aponte possíveis excessos e sugira ajustes práticos. O idioma da resposta deve ser português do Brasil (pt-BR).
 
-Here's the user's financial information:
+**Informações Financeiras do Usuário (Mês Atual):**
 
-Monthly Income: {{{monthlyIncome}}}
-Spending by Category:{{#each spendingByCategory}} {{@key}}: {{{this}}}{{/each}}
-Budget by Category:{{#each budgetByCategory}} {{@key}}: {{{this}}}{{/each}}
+*   **Renda Mensal Total:** R$ {{{monthlyIncome}}}
+*   **Gastos por Categoria:**{{#each spendingByCategory}}
+    *   {{@key}}: R$ {{{this}}}{{/each}}
+*   **Orçamento por Categoria:**{{#each budgetByCategory}}
+    *   {{@key}}: R$ {{{this}}}{{/each}}
 {{#if financialGoal}}
-Financial Goal: {{financialGoal.goalName}}, Amount: {{{financialGoal.goalAmount}}}, Monthly Saving: {{{financialGoal.monthlySaving}}}
+
+**Meta Financeira Principal:**
+*   **Objetivo:** {{financialGoal.goalName}}
+*   **Valor Total:** R$ {{{financialGoal.goalAmount}}}
+*   **Economia Mensal Planejada:** R$ {{{financialGoal.monthlySaving}}}
 {{/if}}
 
-Based on this information, provide a detailed forecast of potential overspending in specific categories and suggest concrete adjustments to help the user stay on track with their financial goals. Consider suggesting ways to reduce spending in certain categories or increase savings.
+**Sua Tarefa:**
+
+Com base nessas informações, gere uma análise detalhada em formato de texto. Sua resposta deve incluir:
+1.  **Análise Geral:** Um resumo de como estão os gastos do usuário em relação aos seus orçamentos e renda.
+2.  **Pontos de Atenção:** Destaque as 2 ou 3 categorias onde o usuário mais gastou ou que estão mais próximas de estourar o orçamento.
+3.  **Sugestões Práticas:** Ofereça conselhos concretos e acionáveis para cada ponto de atenção. Se houver uma meta financeira, suas sugestões devem ajudar o usuário a alcançá-la.
+
+O tom deve ser encorajador e amigável, não julgador.
 `, 
 });
 
@@ -63,3 +76,4 @@ const budgetForecastingFlow = ai.defineFlow(
     return output!;
   }
 );
+

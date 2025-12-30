@@ -40,8 +40,8 @@ export default function BudgetsPage() {
     const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-    const { summary, spendingByCategory } = useMemo(() => {
-        if (!transactions) return { summary: { income: 0, expenses: 0, balance: 0 }, spendingByCategory: {} };
+    const { monthlyIncome, spendingByCategory } = useMemo(() => {
+        if (!transactions || !categories) return { monthlyIncome: 0, spendingByCategory: {} };
 
         const today = new Date();
         const currentMonth = today.getMonth();
@@ -56,21 +56,21 @@ export default function BudgetsPage() {
 
         const spending: Record<string, number> = {};
         currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
-            const category = categories?.find(c => c.id === t.categoryId);
+            const category = categories.find(c => c.id === t.categoryId);
             if (category) {
                  spending[category.name] = (spending[category.name] || 0) + t.amount;
             }
         });
 
-        return { summary: { income }, spendingByCategory: spending };
+        return { monthlyIncome: income, spendingByCategory: spending };
     }, [transactions, categories]);
     
-    const budgetDataForAI = {
+    const budgetDataForAI = useMemo(() => ({
         budgets: budgets || [],
-        income: summary.income,
+        income: monthlyIncome,
         goals: goals || [],
         spending: spendingByCategory,
-    };
+    }), [budgets, monthlyIncome, goals, spendingByCategory]);
     
     const isLoading = budgetsLoading || goalsLoading || transactionsLoading || categoriesLoading;
 
