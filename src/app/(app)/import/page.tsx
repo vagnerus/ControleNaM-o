@@ -3,20 +3,24 @@
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { Account, Category, Transaction } from '@/lib/types';
+import { collection, query } from 'firebase/firestore';
+import type { Account, Category, Transaction, CreditCard } from '@/lib/types';
 import { Header } from "@/components/common/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileUp, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { saveTransaction, saveAccount, saveCategory } from '@/lib/data.tsx';
+import { saveTransaction, saveAccount, saveCategory, saveCard } from '@/lib/data.tsx';
 import { format } from 'date-fns';
 
-type ParsedTransaction = Omit<Transaction, 'id' | 'accountId' | 'categoryId'> & {
+type ParsedTransaction = Partial<Omit<Transaction, 'id' | 'accountId' | 'categoryId'>> & {
     categoryName: string;
     accountName: string;
+    cardName?: string;
+    isInstallment: boolean;
+    totalInstallments?: number;
+    rawRow: string;
 };
 
 export default function ImportPage() {
@@ -30,6 +34,7 @@ export default function ImportPage() {
 
     const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'accounts') : null, [firestore, user]));
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]));
+    const { data: cards, isLoading: cardsLoading } = useCollection<CreditCard>(useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'creditCards') : null, [firestore, user]));
 
     const handleFileParse = (file: File) => {
         if (!file) return;
@@ -52,12 +57,14 @@ export default function ImportPage() {
                     .map(row => row.trim())
                     .filter(row => row)
                     .map(row => {
-                        // Handle CSVs with quotes and commas inside descriptions
                         const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, ''));
-                        if (!values || values.length < 6) return null;
+                        if (!values || values.length < 9) return null;
 
-                        const [date, description, amount, type, categoryName, accountName] = values;
+                        const [date, description, amount, type, categoryName, accountName, cardName, isInstallment, totalInstallments] = values;
                         
+                        // Detect original purchase from installments and skip it
+                        if (description.includes('(Compra Original)')) return null;
+
                         return {
                             date,
                             description,
@@ -65,11 +72,26 @@ export default function ImportPage() {
                             type: type === 'Receita' ? 'income' : 'expense',
                             categoryName: categoryName,
                             accountName: accountName,
+                            cardName: cardName || undefined,
+                            isInstallment: isInstallment === 'SIM',
+                            totalInstallments: isInstallment === 'SIM' ? parseInt(totalInstallments, 10) : undefined,
+                            rawRow: row,
                         };
                     }).filter((t): t is ParsedTransaction => t !== null);
 
-                setParsedTransactions(transactions);
-                toast({ title: 'Arquivo processado!', description: `${transactions.length} transações prontas para importação.` });
+                // Filter out individual installments if the main purchase is present
+                const installmentDescriptions = new Set(transactions.filter(t => t.isInstallment).map(t => t.description.split(' (')[0]));
+                const finalTransactions = transactions.filter(t => {
+                    if (t.isInstallment) {
+                         const baseDesc = t.description.split(' (')[0];
+                         return t.description.includes(' (1/') || !installmentDescriptions.has(baseDesc);
+                    }
+                    return true;
+                });
+
+
+                setParsedTransactions(finalTransactions);
+                toast({ title: 'Arquivo processado!', description: `${finalTransactions.length} transações prontas para importação.` });
             } catch (error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Erro ao processar', description: 'O arquivo CSV parece estar mal formatado.' });
@@ -103,7 +125,7 @@ export default function ImportPage() {
     };
 
     const handleImport = async () => {
-        if (!user || !accounts || !categories || parsedTransactions.length === 0) {
+        if (!user || !accounts || !categories || !cards || parsedTransactions.length === 0) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Não há dados suficientes para importar.' });
             return;
         }
@@ -113,35 +135,42 @@ export default function ImportPage() {
         try {
             const accountsMap = new Map(accounts.map(a => [a.name, a.id]));
             const categoriesMap = new Map(categories.map(c => [c.name, c.id]));
+            const cardsMap = new Map(cards.map(c => [c.name, c.id]));
             
             for (const t of parsedTransactions) {
-                // Find or create account
                 let accountId = accountsMap.get(t.accountName);
                 if (!accountId) {
-                    const newAccount = await saveAccount(firestore, user.uid, { name: t.accountName, balance: 0 });
+                    const newAccount = await saveAccount(firestore, user.uid, { name: t.accountName, balance: 0, icon: 'Landmark' });
                     accountId = newAccount.id;
-                    accountsMap.set(t.accountName, accountId);
+                    accountsMap.set(t.accountName, accountId!);
                 }
 
-                // Find or create category
                 let categoryId = categoriesMap.get(t.categoryName);
                 if (!categoryId) {
-                    const newCategory = await saveCategory(firestore, user.uid, { name: t.categoryName, type: t.type, icon: 'Receipt' });
+                    const newCategory = await saveCategory(firestore, user.uid, { name: t.categoryName, type: t.type!, icon: 'Receipt' });
                     categoryId = newCategory.id;
-                    categoriesMap.set(t.categoryName, categoryId);
+                    categoriesMap.set(t.categoryName, categoryId!);
+                }
+                
+                let creditCardId: string | undefined = undefined;
+                if(t.cardName) {
+                    creditCardId = cardsMap.get(t.cardName);
                 }
 
+
                 const transactionPayload: Omit<Transaction, 'id'> = {
-                    date: new Date(t.date).toISOString(),
-                    description: t.description,
-                    amount: Math.abs(t.amount), // Amount is always positive in the DB
-                    type: t.type,
+                    date: new Date(t.date!).toISOString(),
+                    description: t.description!,
+                    amount: Math.abs(t.amount!),
+                    type: t.type!,
                     categoryId,
                     accountId,
+                    creditCardId,
+                    isInstallment: t.isInstallment,
+                    totalInstallments: t.totalInstallments,
                 };
                 
-                // Use saveTransaction which handles balance updates
-                saveTransaction(firestore, user.uid, transactionPayload);
+                await saveTransaction(firestore, user.uid, transactionPayload);
             }
             
             toast({ title: 'Importação Concluída!', description: `${parsedTransactions.length} transações importadas com sucesso.` });
@@ -157,7 +186,7 @@ export default function ImportPage() {
     };
 
 
-    const isLoading = accountsLoading || categoriesLoading;
+    const isLoading = accountsLoading || categoriesLoading || cardsLoading;
 
     return (
         <>
@@ -169,8 +198,9 @@ export default function ImportPage() {
                             <FileUp className="h-8 w-8 text-primary" />
                         </div>
                         <CardTitle className="text-center">Importar de Arquivo CSV</CardTitle>
-                        <CardDescription className="text-center">
-                            Envie um arquivo CSV no mesmo formato da nossa exportação para adicionar transações em lote.
+                        <CardDescription className="text-center max-w-xl mx-auto">
+                            Envie um arquivo CSV no mesmo formato da nossa exportação para adicionar transações em lote. 
+                            O sistema identificará compras parceladas e criará as parcelas futuras automaticamente.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center">
@@ -224,12 +254,13 @@ export default function ImportPage() {
                                     <TableBody>
                                         {parsedTransactions.map((t, i) => (
                                             <TableRow key={i}>
-                                                <TableCell>{format(new Date(t.date), 'dd/MM/yyyy')}</TableCell>
+                                                <TableCell>{format(new Date(t.date!), 'dd/MM/yyyy')}</TableCell>
                                                 <TableCell>{t.description}</TableCell>
                                                 <TableCell>{t.categoryName}</TableCell>
                                                 <TableCell>{t.accountName}</TableCell>
                                                 <TableCell className={`text-right font-medium ${t.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
+                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount!)}
+                                                    {t.isInstallment && <span className="text-xs text-muted-foreground ml-1"> (1/{t.totalInstallments})</span>}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

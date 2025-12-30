@@ -27,12 +27,17 @@ export default function ExportPage() {
     const categoriesQuery = useMemoFirebase(() =>
         user ? collection(firestore, 'users', user.uid, 'categories') : null
     , [firestore, user]);
+    
+    const cardsQuery = useMemoFirebase(() =>
+        user ? collection(firestore, 'users', user.uid, 'creditCards') : null
+    , [firestore, user]);
 
     const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
     const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
     const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
+    const { data: cards, isLoading: cardsLoading } = useCollection(cardsQuery);
 
-    const isLoading = transactionsLoading || accountsLoading || categoriesLoading;
+    const isLoading = transactionsLoading || accountsLoading || categoriesLoading || cardsLoading;
 
     const handleExport = () => {
         if (!transactions || !accounts || !categories || isLoading) {
@@ -45,23 +50,32 @@ export default function ExportPage() {
         }
 
         try {
-            const headers = ["Data", "Descrição", "Valor", "Tipo", "Categoria", "Conta"];
+            const headers = ["Data", "Descrição", "Valor", "Tipo", "Categoria", "Conta", "Cartão de Crédito", "É Parcela", "Total de Parcelas"];
             const csvRows = [headers.join(',')];
 
             for (const transaction of transactions) {
+                 if (transaction.isInstallment && transaction.description.includes('(Compra Original)')) {
+                    continue;
+                }
+
                 const date = format(new Date(transaction.date), 'yyyy-MM-dd');
-                const description = `"${transaction.description.replace(/"/g, '""')}"`; // Escape double quotes
-                const amount = (transaction.type === 'expense' ? -1 : 1) * transaction.amount;
+                const description = `"${transaction.description.replace(/"/g, '""')}"`;
+                const amount = transaction.amount; // Store the absolute value
                 const type = transaction.type === 'income' ? 'Receita' : 'Despesa';
                 const category = categories.find(c => c.id === transaction.categoryId)?.name || 'N/A';
-                const account = accounts.find(a => a.id === transaction.accountId)?.name || 'N/A';
+                const accountName = accounts.find(a => a.id === transaction.accountId)?.name || 'N/A';
+                const cardName = transaction.creditCardId ? cards?.find(c => c.id === transaction.creditCardId)?.name : '';
                 
-                const row = [date, description, amount, type, `"${category}"`, `"${account}"`];
+                const isInstallment = transaction.isInstallment ? 'SIM' : 'NÃO';
+                 const totalInstallments = transaction.isInstallment ? (transaction.totalInstallments || '') : '';
+
+
+                const row = [date, description, amount, type, `"${category}"`, `"${accountName}"`, `"${cardName || ''}"`, isInstallment, totalInstallments];
                 csvRows.push(row.join(','));
             }
 
             const csvString = csvRows.join('\n');
-            const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel compatibility
+            const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
 
             const link = document.createElement("a");
             if (link.download !== undefined) {
