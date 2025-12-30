@@ -34,19 +34,17 @@ export const saveTransaction = (
         }
     }
 
-    // Revert old balance if it's an update and not a credit card transaction
-    if (oldTransactionData && !oldTransactionData.creditCardId) {
+    // Revert old balance if it's an update
+    if (oldTransactionData) {
         const oldAccountRef = doc(firestore, 'users', userId, 'accounts', oldTransactionData.accountId);
         const oldBalanceChange = oldTransactionData.type === 'income' ? -oldTransactionData.amount : oldTransactionData.amount;
         tx.update(oldAccountRef, { balance: increment(oldBalanceChange) });
     }
 
-    // Apply new balance change if not a credit card transaction
-    if (!transactionData.creditCardId) {
-        const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
-        const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
-        tx.update(newAccountRef, { balance: increment(newBalanceChange) });
-    }
+    // Apply new balance change
+    const newAccountRef = doc(firestore, 'users', userId, 'accounts', transactionData.accountId);
+    const newBalanceChange = transactionData.type === 'income' ? transactionData.amount : -transactionData.amount;
+    tx.update(newAccountRef, { balance: increment(newBalanceChange) });
     
     tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
 
@@ -75,12 +73,9 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
         }
         const transaction = transactionSnapshot.data() as Transaction;
         
-        // Revert balance change only if it's not a credit card transaction
-        if (!transaction.creditCardId) {
-            const accountRef = doc(firestore, 'users', userId, 'accounts', transaction.accountId);
-            const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
-            tx.update(accountRef, { balance: increment(balanceChange) });
-        }
+        const accountRef = doc(firestore, 'users', userId, 'accounts', transaction.accountId);
+        const balanceChange = transaction.type === 'income' ? -transaction.amount : transaction.amount;
+        tx.update(accountRef, { balance: increment(balanceChange) });
         
         tx.delete(transactionDoc);
     }).catch(error => {
@@ -262,5 +257,99 @@ export const deleteGoal = (firestore: Firestore, userId: string, goalId: string)
   const goalDoc = doc(firestore, 'users', userId, 'financialGoals', goalId);
   return deleteDoc(goalDoc).catch(error => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: goalDoc.path, operation: 'delete' }));
+  });
+};
+
+// Category Functions
+export const saveCategory = (
+  firestore: Firestore,
+  userId: string,
+  categoryData: Omit<Category, 'id'>,
+  categoryId?: string
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated.');
+  }
+  
+  if (categoryId) {
+    const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
+    return updateDoc(categoryDoc, categoryData).catch(error => {
+      console.error("Error updating category: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: categoryDoc.path,
+        operation: 'update',
+        requestResourceData: categoryData,
+      }));
+    });
+  } else {
+    const categoriesCollection = collection(firestore, 'users', userId, 'categories');
+    return addDoc(categoriesCollection, categoryData).catch(error => {
+      console.error("Error adding category: ", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: categoriesCollection.path,
+        operation: 'create',
+        requestResourceData: categoryData,
+      }));
+    });
+  }
+};
+
+export const deleteCategory = (
+  firestore: Firestore,
+  userId: string,
+  categoryId: string
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated to delete a category.');
+  }
+  const categoryDoc = doc(firestore, 'users', userId, 'categories', categoryId);
+  
+  return deleteDoc(categoryDoc)
+    .catch(error => {
+      console.error("Error deleting category: ", error);
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: categoryDoc.path,
+          operation: 'delete',
+        })
+      );
+    });
+};
+
+
+// Tag Functions
+export const saveTag = (firestore: Firestore, userId: string, tagData: Omit<Tag, 'id'>, tagId?: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+  if (tagId) {
+    const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);
+    return updateDoc(tagDoc, tagData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'update', requestResourceData: tagData }));
+    });
+  } else {
+    const tagsCollection = collection(firestore, 'users', userId, 'tags');
+    return addDoc(tagsCollection, tagData).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagsCollection.path, operation: 'create', requestResourceData: tagData }));
+    });
+  }
+};
+
+export const deleteTag = async (firestore: Firestore, userId: string, tagId: string) => {
+  if (!userId) throw new Error("User must be authenticated.");
+
+  // Check if tag is in use in any transaction
+  const transactionsRef = collection(firestore, 'users', userId, 'transactions');
+  // This is a simplified check. For production, you'd want to query where 'tagIds' array-contains tagId.
+  // This requires a composite index on tagIds.
+  // const q = query(transactionsRef, where('tagIds', 'array-contains', tagId));
+  // const querySnapshot = await getDocs(q);
+  // if (!querySnapshot.empty) {
+  //   throw new Error("Cannot delete a tag that is currently in use.");
+  // }
+
+  const tagDoc = doc(firestore, 'users', userId, 'tags', tagId);
+  return deleteDoc(tagDoc).catch(error => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: tagDoc.path, operation: 'delete' }));
+    throw error; // Re-throw to be caught in the component
   });
 };
