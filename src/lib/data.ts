@@ -102,7 +102,15 @@ export const saveTransaction = (
                 installmentNumber: i + 1,
             });
         }
-        batch.commit().catch(error => console.error("Error creating installments:", error));
+        batch.commit().catch(error => {
+            console.error("Error creating installments:", error)
+            const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: transactionsCollection.path,
+                operation: 'create',
+                requestResourceData: transactionData,
+            }));
+        });
     } else { // For single new transactions or updating existing ones
         runTransaction(firestore, async (tx) => {
             const transactionsCollection = collection(firestore, 'users', userId, 'transactions');
@@ -133,7 +141,15 @@ export const saveTransaction = (
             tx.set(newDocRef, { ...transactionData, date: transactionData.date.toString() });
 
         }).catch(error => {
-            console.error("Error saving transaction:", error);
+            const path = transactionId 
+                ? doc(collection(firestore, 'users', userId, 'transactions'), transactionId).path
+                : collection(firestore, 'users', userId, 'transactions').path;
+
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: path,
+                operation: transactionId ? 'update' : 'create',
+                requestResourceData: transactionData,
+            }));
         });
     }
 };
@@ -164,7 +180,16 @@ export const deleteTransaction = async (firestore: Firestore, userId: string, tr
         }
     }
     
-    await batch.commit().catch(error => console.error("Error deleting transaction(s):", error));
+    await batch.commit().catch(error => {
+        const path = transaction.installmentId 
+            ? collection(firestore, 'users', userId, 'transactions').path 
+            : doc(firestore, 'users', userId, 'transactions', transaction.id).path;
+
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: path,
+            operation: 'delete'
+        }));
+    });
 };
 
 export const saveCard = (

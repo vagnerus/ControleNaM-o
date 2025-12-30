@@ -161,7 +161,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
         saveTransaction(firestore, user.uid, { 
             ...values,
             date: values.date.toISOString(),
-            totalInstallments: values.isInstallment ? values.totalInstallments : 1,
+            totalInstallments: values.isInstallment ? values.totalInstallments : undefined, // Set to undefined if not installment
         }, transaction?.id);
         toast({
             title: "Sucesso!",

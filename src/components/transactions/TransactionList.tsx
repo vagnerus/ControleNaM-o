@@ -97,7 +97,7 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
             toast({
                 variant: "destructive",
                 title: "Edição não permitida",
-                description: "Não é possível editar uma única parcela. Por favor, remova o grupo de parcelas e crie novamente.",
+                description: "Não é possível editar uma única parcela. Remova a compra e crie-a novamente.",
             });
             return;
         }
