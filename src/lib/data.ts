@@ -15,8 +15,8 @@ import {
   Plane,
   Receipt,
 } from 'lucide-react';
-import type { Category, Transaction } from '@/lib/types';
-import { addDoc, collection, Firestore } from 'firebase/firestore';
+import type { Category, Transaction, CreditCard } from '@/lib/types';
+import { addDoc, collection, Firestore, doc, deleteDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -72,3 +72,50 @@ export const addTransaction = (
       );
     });
 };
+
+export const addCard = (
+  firestore: Firestore,
+  userId: string,
+  card: Omit<CreditCard, 'id'>
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated to add a card.');
+  }
+  const cardsCollection = collection(firestore, 'users', userId, 'creditCards');
+  
+  addDoc(cardsCollection, card)
+    .catch(error => {
+      console.error("Error adding card: ", error);
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: cardsCollection.path,
+          operation: 'create',
+          requestResourceData: card,
+        })
+      );
+    });
+}
+
+export const deleteCard = (
+  firestore: Firestore,
+  userId: string,
+  cardId: string
+) => {
+  if (!userId) {
+    throw new Error('User must be authenticated to delete a card.');
+  }
+  const cardDoc = doc(firestore, 'users', userId, 'creditCards', cardId);
+  
+  deleteDoc(cardDoc)
+    .catch(error => {
+      console.error("Error deleting card: ", error);
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: cardDoc.path,
+          operation: 'delete',
+        })
+      );
+    });
+}

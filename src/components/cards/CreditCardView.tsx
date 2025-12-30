@@ -1,10 +1,34 @@
+'use client';
 import type { CreditCard, Transaction } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { TransactionList } from "../transactions/TransactionList";
+import { Button } from "../ui/button";
+import { MoreVertical, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteCard } from "@/lib/data";
+import { useFirestore, useUser } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
+
 
 type CreditCardViewProps = {
-  cardData: CreditCard & { transactions: Transaction[] };
+  cardData: CreditCard & { transactions: Transaction[], spent: number };
 };
 
 const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
@@ -12,13 +36,16 @@ const BrandLogo = ({ brand }: { brand: CreditCard['brand'] }) => {
     if (brand === 'visa') return <div className="font-bold text-lg italic text-blue-800">VISA</div>
     if (brand === 'mastercard') return <div className="font-bold text-lg italic text-orange-500">Mastercard</div>
     if (brand === 'amex') return <div className="font-bold text-lg text-blue-600">AMEX</div>
-    return null;
+    return <div className="font-bold text-lg">CARD</div>;
 }
 
 export function CreditCardView({ cardData }: CreditCardViewProps) {
-  const spentAmount = cardData.transactions.reduce((sum, t) => sum + t.amount, 0);
-  const availableLimit = cardData.limit - spentAmount;
-  const usagePercentage = (spentAmount / cardData.limit) * 100;
+  const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const availableLimit = cardData.limit - cardData.spent;
+  const usagePercentage = (cardData.spent / cardData.limit) * 100;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -26,16 +53,59 @@ export function CreditCardView({ cardData }: CreditCardViewProps) {
       currency: "BRL",
     }).format(value);
 
+  const handleDelete = () => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Você precisa estar logado.' });
+        return;
+    }
+    deleteCard(firestore, user.uid, cardData.id);
+    toast({ title: 'Sucesso', description: 'Cartão removido.' });
+  }
+
   return (
-    <Card className="overflow-hidden">
-        <CardHeader>
-            <CardTitle>{cardData.name}</CardTitle>
-            <CardDescription>Gerenciamento da fatura e limite do seu cartão.</CardDescription>
+    <Card className="overflow-hidden shadow-lg">
+        <CardHeader className="flex-row items-start justify-between">
+            <div>
+                <CardTitle>{cardData.name}</CardTitle>
+                <CardDescription>Gerenciamento da fatura e limite do seu cartão.</CardDescription>
+            </div>
+             <AlertDialog>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                         <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                            seu cartão e todas as transações associadas a ele.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                            Excluir
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
           {/* Credit Card Visual */}
-          <div className="relative aspect-[1.586] w-full max-w-sm mx-auto rounded-xl p-6 flex flex-col justify-between bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg">
+          <div className="relative aspect-[1.586] w-full max-w-sm mx-auto rounded-xl p-6 flex flex-col justify-between bg-gradient-to-br from-primary via-primary/70 to-accent text-primary-foreground shadow-2xl">
              <div>
                 <div className="flex justify-between items-center">
                     <span className="text-sm font-light">ControleNaMão</span>
@@ -47,25 +117,25 @@ export function CreditCardView({ cardData }: CreditCardViewProps) {
              </div>
              <div>
                 <div className="text-xs uppercase">Titular</div>
-                <div className="font-medium">Usuário App</div>
+                <div className="font-medium">{user?.displayName || 'Usuário App'}</div>
              </div>
           </div>
           <div className="mt-6 space-y-4">
             <div>
                 <div className="flex justify-between text-sm font-medium mb-1">
                     <span>Fatura Atual</span>
-                    <span>{formatCurrency(spentAmount)}</span>
+                    <span>{formatCurrency(cardData.spent)}</span>
                 </div>
                 <Progress value={usagePercentage} />
+                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>{usagePercentage.toFixed(0)}% usado</span>
+                     <span>Limite: {formatCurrency(cardData.limit)}</span>
+                </div>
             </div>
-            <div className="text-sm space-y-2">
+            <div className="text-sm space-y-2 border-t pt-4">
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Limite disponível:</span>
                     <span className="font-medium">{formatCurrency(availableLimit)}</span>
-                </div>
-                 <div className="flex justify-between">
-                    <span className="text-muted-foreground">Limite total:</span>
-                    <span className="font-medium">{formatCurrency(cardData.limit)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Fecha em:</span>
@@ -79,9 +149,15 @@ export function CreditCardView({ cardData }: CreditCardViewProps) {
           </div>
         </div>
         <div className="md:col-span-2">
-            <h3 className="text-lg font-semibold mb-2">Transações do Cartão</h3>
-            <div className="border rounded-lg">
-                <TransactionList transactions={cardData.transactions} />
+            <h3 className="text-lg font-semibold mb-4">Transações Recentes do Cartão</h3>
+            <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+                {cardData.transactions.length > 0 ? (
+                    <TransactionList transactions={cardData.transactions} />
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                        Nenhuma transação neste cartão ainda.
+                    </div>
+                )}
             </div>
         </div>
       </CardContent>
