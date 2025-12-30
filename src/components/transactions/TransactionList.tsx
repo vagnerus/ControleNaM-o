@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -32,33 +33,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "../ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { AddTransactionDialog } from "./AddTransactionDialog";
 import { useState } from "react";
-import { collection, query } from "firebase/firestore";
 
 type TransactionListProps = {
   transactions: Transaction[];
   accounts: Account[];
+  categories: Category[];
+  tags: Tag[];
 };
 
-export function TransactionList({ transactions, accounts }: TransactionListProps) {
+export function TransactionList({ transactions, accounts, categories, tags }: TransactionListProps) {
     const { toast } = useToast();
     const { user } = useUser();
     const firestore = useFirestore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
-    const categoriesQuery = useMemoFirebase(() =>
-        user ? query(collection(firestore, 'users', user.uid, 'categories')) : null
-    , [firestore, user]);
-    const { data: categories } = useCollection<Category>(categoriesQuery);
-
-    const tagsQuery = useMemoFirebase(() =>
-        user ? query(collection(firestore, 'users', user.uid, 'tags')) : null
-    , [firestore, user]);
-    const { data: tags } = useCollection<Tag>(tagsQuery);
-
 
     const getCategory = (categoryId: string) => {
         return categories?.find(cat => cat.id === categoryId);
@@ -224,3 +215,5 @@ export function TransactionList({ transactions, accounts }: TransactionListProps
     </div>
   );
 }
+
+    

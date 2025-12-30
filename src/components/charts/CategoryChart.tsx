@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { Pie, PieChart, Cell } from "recharts"
-import { getIconComponent } from "@/lib/data"
+
 import {
   ChartContainer,
   ChartTooltip,
@@ -12,56 +12,27 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { useMemo } from "react"
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
-import { collection } from "firebase/firestore"
-import type { Category } from "@/lib/types"
+
+type ChartDataItem = {
+  id: string;
+  name: string;
+  amount: number;
+  icon?: string;
+  fill: string;
+};
 
 type CategoryChartProps = {
-    data: Record<string, number>
+    data: ChartDataItem[];
+    config: ChartConfig;
 }
 
-export function CategoryChart({ data }: CategoryChartProps) {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const categoriesQuery = useMemoFirebase(() => 
-    user ? collection(firestore, 'users', user.uid, 'categories') : null
-  , [firestore, user]);
-  const { data: categories } = useCollection<Category>(categoriesQuery);
-
-  const { chartData, chartConfig } = useMemo(() => {
-    if (!categories) return { chartData: [], chartConfig: {} };
-
-    const chartData = Object.entries(data).map(([categoryId, amount]) => {
-      const category = categories.find(c => c.id === categoryId);
-      return {
-        id: categoryId,
-        name: category?.name || 'Desconhecido',
-        amount,
-        icon: category?.icon,
-        fill: `hsl(var(--chart-${(categories.findIndex(c => c.id === categoryId) % 5) + 1}))`,
-      };
-    });
-
-    const chartConfig = chartData.reduce((acc, { name, fill, icon }) => {
-      acc[name] = {
-        label: name,
-        color: fill,
-        icon: icon ? getIconComponent(icon) : undefined,
-      };
-      return acc;
-    }, {} as ChartConfig);
-
-    return { chartData, chartConfig };
-  }, [data, categories]);
+export function CategoryChart({ data, config }: CategoryChartProps) {
   
-  const totalAmount = useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.amount, 0)
-  }, [chartData])
+  const totalAmount = React.useMemo(() => {
+    return data.reduce((acc, curr) => acc + curr.amount, 0)
+  }, [data])
 
-
-  if (!chartData.length) {
+  if (!data.length) {
     return (
         <div className="h-60 w-full flex items-center justify-center">
             <p className="text-muted-foreground">Sem dados de despesas para exibir.</p>
@@ -71,22 +42,39 @@ export function CategoryChart({ data }: CategoryChartProps) {
 
   return (
     <ChartContainer
-      config={chartConfig}
+      config={config}
       className="mx-auto aspect-square max-h-[400px]"
     >
       <PieChart>
         <ChartTooltip
             cursor={false}
-            content={<ChartTooltipContent hideLabel nameKey="name" />}
+            content={
+                <ChartTooltipContent 
+                    hideLabel 
+                    nameKey="name"
+                    formatter={(value, name) => {
+                        const formattedValue = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value as number);
+                        const percentage = totalAmount ? ((value as number / totalAmount) * 100).toFixed(0) : 0;
+                        return (
+                            <div className="flex flex-col gap-0.5">
+                                <div className="font-medium">{name}</div>
+                                <div className="text-muted-foreground">
+                                    {formattedValue} ({percentage}%)
+                                </div>
+                            </div>
+                        );
+                    }}
+                />
+            }
         />
         <Pie
-          data={chartData}
+          data={data}
           dataKey="amount"
           nameKey="name"
           innerRadius={60}
           strokeWidth={5}
         >
-            {chartData.map((entry, index) => (
+            {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
         </Pie>
@@ -98,3 +86,5 @@ export function CategoryChart({ data }: CategoryChartProps) {
     </ChartContainer>
   )
 }
+
+    

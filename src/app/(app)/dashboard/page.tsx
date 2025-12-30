@@ -18,10 +18,11 @@ import { BudgetCard } from "@/components/budgets/BudgetCard";
 import { GoalCard } from "@/components/goals/GoalCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2, Landmark } from "lucide-react";
+import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2 } from "lucide-react";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import { AccountCard } from '@/components/accounts/AccountCard';
 import { SettingsContext } from '@/contexts/SettingsContext';
+import { getIconComponent } from '@/lib/data';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -42,11 +43,15 @@ export default function DashboardPage() {
   , [firestore, user]);
 
   const budgetsQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'budgets') : null
+    user ? query(collection(firestore, 'users', user.uid, 'budgets')) : null
   , [firestore, user]);
 
   const goalsQuery = useMemoFirebase(() =>
-    user ? collection(firestore, 'users', user.uid, 'financialGoals') : null
+    user ? collection(firestore, 'users', user.uid, 'financialGoals')) : null
+  , [firestore, user]);
+
+  const categoriesQuery = useMemoFirebase(() =>
+    user ? query(collection(firestore, 'users', user.uid, 'categories')) : null
   , [firestore, user]);
 
   // Fetch data using hooks
@@ -55,9 +60,14 @@ export default function DashboardPage() {
   const { data: accounts, isLoading: accountsLoading } = useCollection<Account>(accountsQuery);
   const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsQuery);
   const { data: goals, isLoading: goalsLoading } = useCollection<FinancialGoal>(goalsQuery);
+  const { data: categories, isLoading: categoriesLoading } = useCollection<Category>(categoriesQuery);
 
-  const { summary, spendingByCategory } = useMemo(() => {
-    if (!transactions) return { summary: { income: 0, expenses: 0, balance: 0 }, spendingByCategory: {} };
+  const { summary, expenseChartData, expenseChartConfig } = useMemo(() => {
+    if (!transactions || !accounts || !categories) return { 
+      summary: { income: 0, expenses: 0, balance: 0 }, 
+      expenseChartData: [], 
+      expenseChartConfig: {} 
+    };
 
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -71,17 +81,41 @@ export default function DashboardPage() {
     const income = currentMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     
-    const totalBalance = (accounts || []).reduce((sum, acc) => sum + acc.balance, 0);
+    const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-    const spending: Record<string, number> = {};
+    const spendingByCategory: Record<string, number> = {};
     currentMonthTransactions.filter(t => t.type === 'expense').forEach(t => {
-        spending[t.categoryId] = (spending[t.categoryId] || 0) + t.amount;
+        spendingByCategory[t.categoryId] = (spendingByCategory[t.categoryId] || 0) + t.amount;
     });
 
-    return { summary: { income, expenses, balance: totalBalance }, spendingByCategory: spending };
-  }, [transactions, accounts]);
+    const chartData = Object.entries(spendingByCategory).map(([categoryId, amount], index) => {
+      const category = categories.find(c => c.id === categoryId);
+      return {
+        id: categoryId,
+        name: category?.name || 'Desconhecido',
+        amount,
+        icon: category?.icon,
+        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+      };
+    }).sort((a, b) => b.amount - a.amount);
+
+    const chartConfig = chartData.reduce((acc, { name, fill, icon }) => {
+      acc[name] = {
+        label: name,
+        color: fill,
+        icon: icon ? getIconComponent(icon) : undefined,
+      };
+      return acc;
+    }, {} as any);
+
+    return { 
+      summary: { income, expenses, balance: totalBalance }, 
+      expenseChartData: chartData,
+      expenseChartConfig: chartConfig,
+    };
+  }, [transactions, accounts, categories]);
   
-  const isLoading = transactionsLoading || recentTransactionsLoading || budgetsLoading || goalsLoading || accountsLoading;
+  const isLoading = transactionsLoading || recentTransactionsLoading || budgetsLoading || goalsLoading || accountsLoading || categoriesLoading;
 
   if (isLoading) {
     return (
@@ -131,7 +165,7 @@ export default function DashboardPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
-                      <CategoryChart data={spendingByCategory} />
+                      <CategoryChart data={expenseChartData} config={expenseChartConfig} />
                     </CardContent>
                   </Card>
               </div>
@@ -182,7 +216,7 @@ export default function DashboardPage() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  <TransactionList transactions={recentTransactions || []} accounts={accounts || []} />
+                  <TransactionList transactions={recentTransactions || []} accounts={accounts || []} categories={categories || []} tags={[]} />
                 </CardContent>
               </Card>
             </div>
@@ -204,7 +238,7 @@ export default function DashboardPage() {
                 <CardContent className="space-y-4">
                   {budgets && budgets.length > 0 ? (
                     budgets.slice(0, 2).map((budget) => (
-                      <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} isCompact />
+                      <BudgetCard key={budget.id} budget={budget} transactions={transactions || []} category={categories?.find(c=>c.id === budget.categoryId)} isCompact />
                     ))
                   ) : (
                       <p className="text-sm text-muted-foreground">Nenhum planejamento encontrado.</p>
@@ -245,3 +279,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

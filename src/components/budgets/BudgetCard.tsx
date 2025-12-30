@@ -24,30 +24,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "../ui/button";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { AddBudgetDialog } from "./AddBudgetDialog";
-import { collection } from "firebase/firestore";
 
 type BudgetCardProps = {
   budget: Budget;
   transactions: Transaction[];
+  category?: Category;
   isCompact?: boolean;
 };
 
-export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCardProps) {
+export function BudgetCard({ budget, transactions, category, isCompact = false }: BudgetCardProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  const categoriesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'categories') : null, [firestore, user]);
-  const { data: categories } = useCollection<Category>(categoriesQuery);
   
-  const category = useMemo(() => {
-    return categories?.find(c => c.id === budget.categoryId);
-  }, [categories, budget.categoryId]);
-
   const spent = useMemo(() => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -180,3 +173,5 @@ export function BudgetCard({ budget, transactions, isCompact = false }: BudgetCa
     </Card>
   );
 }
+
+    

@@ -422,7 +422,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
                     <Popover>
                         <PopoverTrigger asChild>
                             <FormControl>
-                                <Button variant="outline" role="combobox" className="w-full justify-start font-normal h-auto min-h-10">
+                                <Button variant="outline" role="combobox" className="w-full justify-start font-normal h-auto min-h-10 flex-wrap">
                                     {selectedTagIds.length > 0 ? (
                                         <div className="flex gap-1 flex-wrap">
                                             {selectedTagIds.map(tagId => {
@@ -468,3 +468,5 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
     </Form>
   );
 }
+
+    
