@@ -124,30 +124,32 @@ export function SidebarNav() {
         <SidebarMenu>
           {mainMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
         <SidebarMenu>
           {secondaryMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -155,15 +157,16 @@ export function SidebarNav() {
             <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Dados</p>
           {dataMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith(item.href)}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -171,15 +174,16 @@ export function SidebarNav() {
              <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Organização</p>
             {organizationMenuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
-                    <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
-                    tooltip={item.label}
-                    >
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(item.href)}
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>
@@ -187,15 +191,16 @@ export function SidebarNav() {
             <p className="text-xs font-semibold text-sidebar-foreground/50 px-4 mb-1">Ferramentas</p>
             {toolsMenuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                    <Link href={item.href} legacyBehavior passHref>
-                        <SidebarMenuButton
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.label}
-                        >
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith(item.href)}
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href}>
                         <item.icon />
                         <span>{item.label}</span>
-                        </SidebarMenuButton>
-                    </Link>
+                      </Link>
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
         </SidebarMenu>
