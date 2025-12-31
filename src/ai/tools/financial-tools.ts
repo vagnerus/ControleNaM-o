@@ -1,4 +1,3 @@
-'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
@@ -17,9 +16,9 @@ export type FinancialAgentOutput = z.infer<typeof FinancialAgentOutputSchema>;
 
 
 async function getCurrentUserId(): Promise<string> {
-    const { auth: firebaseAuth } = initializeFirebase();
-    // This is a placeholder for getting the current user's ID.
     // In a real application, you would get this from the session or auth state.
+    // This is a placeholder for getting the current user's ID.
+    const { auth: firebaseAuth } = initializeFirebase();
     const user = firebaseAuth.currentUser;
     if (!user) {
         // In a real scenario, you might throw an error that the client can handle.
