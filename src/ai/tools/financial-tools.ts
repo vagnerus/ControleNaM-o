@@ -6,13 +6,25 @@ import { getAuth } from 'firebase/auth';
 import { collection, getDocs, query, where, getFirestore, runTransaction, doc, addDoc, updateDoc, increment } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
+// Schemas and types moved from financial-agent-flow.ts
+export const FinancialAgentInputSchema = z.string();
+export type FinancialAgentInput = z.infer<typeof FinancialAgentInputSchema>;
+
+export const FinancialAgentOutputSchema = z.object({
+  response: z.string().describe('A confirmation message to the user about the action taken, in pt-BR.'),
+});
+export type FinancialAgentOutput = z.infer<typeof FinancialAgentOutputSchema>;
+
+
 async function getCurrentUserId(): Promise<string> {
     const { auth: firebaseAuth } = initializeFirebase();
     // This is a placeholder for getting the current user's ID.
     // In a real application, you would get this from the session or auth state.
     const user = firebaseAuth.currentUser;
     if (!user) {
-        throw new Error("User not authenticated.");
+        // In a real scenario, you might throw an error that the client can handle.
+        // For tool use, returning an informative string can be helpful for the LLM.
+        throw new Error("User not authenticated. Please log in.");
     }
     return user.uid;
 }
@@ -38,55 +50,63 @@ export const addTransactionTool = ai.defineTool(
         name: 'addTransaction',
         description: 'Adiciona uma nova transação financeira (despesa ou receita)',
         inputSchema: AddTransactionSchema,
-        outputSchema: z.string(),
+        outputSchema: z.string(), // The tool will return a confirmation string.
     },
     async (input) => {
-        const { firestore } = initializeFirebase();
-        const userId = await getCurrentUserId();
-        
-        // Find category by name
-        const categoriesRef = collection(firestore, `users/${userId}/categories`);
-        const qCategory = query(categoriesRef, where("name", "==", input.categoryName));
-        const categorySnap = await getDocs(qCategory);
-        if (categorySnap.empty) {
-            return `Erro: Categoria "${input.categoryName}" não encontrada.`;
-        }
-        const categoryId = categorySnap.docs[0].id;
-
-        // Find account by name or get the first one
-        const accountsRef = collection(firestore, `users/${userId}/accounts`);
-        let accountId: string;
-        if (input.accountName) {
-            const qAccount = query(accountsRef, where("name", "==", input.accountName));
-            const accountSnap = await getDocs(qAccount);
-            if (accountSnap.empty) {
-                return `Erro: Conta "${input.accountName}" não encontrada.`;
+        try {
+            const { firestore } = initializeFirebase();
+            const userId = await getCurrentUserId();
+            
+            // Find category by name
+            const categoriesRef = collection(firestore, `users/${userId}/categories`);
+            const qCategory = query(categoriesRef, where("name", "==", input.categoryName), where("type", "==", input.type));
+            const categorySnap = await getDocs(qCategory);
+            if (categorySnap.empty) {
+                return `Erro: Categoria "${input.categoryName}" do tipo "${input.type}" não encontrada.`;
             }
-            accountId = accountSnap.docs[0].id;
-        } else {
-            const accountSnap = await getDocs(accountsRef);
-            if (accountSnap.empty) {
-                 return `Erro: Nenhuma conta bancária encontrada.`;
+            const categoryId = categorySnap.docs[0].id;
+
+            // Find account by name or get the first one
+            const accountsRef = collection(firestore, `users/${userId}/accounts`);
+            let accountId: string;
+            if (input.accountName) {
+                const qAccount = query(accountsRef, where("name", "==", input.accountName));
+                const accountSnap = await getDocs(qAccount);
+                if (accountSnap.empty) {
+                    return `Erro: Conta "${input.accountName}" não encontrada.`;
+                }
+                accountId = accountSnap.docs[0].id;
+            } else {
+                const accountSnap = await getDocs(accountsRef);
+                if (accountSnap.empty) {
+                    return `Erro: Nenhuma conta bancária encontrada.`;
+                }
+                accountId = accountSnap.docs[0].id;
             }
-            accountId = accountSnap.docs[0].id;
-        }
 
-        const accountRef = doc(firestore, `users/${userId}/accounts`, accountId);
+            const accountRef = doc(firestore, `users/${userId}/accounts`, accountId);
 
-        await runTransaction(firestore, async (transaction) => {
-            const transRef = doc(collection(firestore, `users/${userId}/transactions`));
-            transaction.set(transRef, {
-                ...input,
-                date: new Date().toISOString(),
-                accountId: accountId,
-                categoryId: categoryId,
+            await runTransaction(firestore, async (transaction) => {
+                const transCollectionRef = collection(firestore, `users/${userId}/transactions`);
+                const newTransRef = doc(transCollectionRef); // Create a new doc reference
+                
+                transaction.set(newTransRef, {
+                    description: input.description,
+                    amount: input.amount,
+                    type: input.type,
+                    date: new Date().toISOString(),
+                    accountId: accountId,
+                    categoryId: categoryId,
+                });
+
+                const balanceChange = input.type === 'income' ? input.amount : -input.amount;
+                transaction.update(accountRef, { balance: increment(balanceChange) });
             });
-
-            const balanceChange = input.type === 'income' ? input.amount : -input.amount;
-            transaction.update(accountRef, { balance: increment(balanceChange) });
-        });
-        
-        return `Transação de R$ ${input.amount} em "${input.categoryName}" adicionada com sucesso.`;
+            
+            return `Transação de R$ ${input.amount} na categoria "${input.categoryName}" adicionada com sucesso.`;
+        } catch (e: any) {
+            return `Erro ao adicionar transação: ${e.message}`;
+        }
     }
 );
 
@@ -96,23 +116,40 @@ export const updateBudgetByCategoryNameTool = ai.defineTool(
         name: 'updateBudgetByCategoryName',
         description: 'Atualiza o valor de um orçamento para uma categoria específica',
         inputSchema: UpdateBudgetSchema,
-        outputSchema: z.string(),
+        outputSchema: z.string(), // The tool will return a confirmation string.
     },
     async (input) => {
-        const { firestore } = initializeFirebase();
-        const userId = await getCurrentUserId();
+        try {
+            const { firestore } = initializeFirebase();
+            const userId = await getCurrentUserId();
 
-        const budgetsRef = collection(firestore, `users/${userId}/budgets`);
-        const qBudget = query(budgetsRef, where("categoryName", "==", input.categoryName));
-        const budgetSnap = await getDocs(qBudget);
+            // Find category by name to get its ID
+            const categoriesRef = collection(firestore, `users/${userId}/categories`);
+            const qCategory = query(categoriesRef, where("name", "==", input.categoryName));
+            const categorySnap = await getDocs(qCategory);
 
-        if (budgetSnap.empty) {
-            return `Erro: Orçamento para a categoria "${input.categoryName}" não encontrado.`;
+            if (categorySnap.empty) {
+                return `Erro: Categoria "${input.categoryName}" não encontrada.`;
+            }
+            const categoryId = categorySnap.docs[0].id;
+
+            // Find budget by category ID
+            const budgetsRef = collection(firestore, `users/${userId}/budgets`);
+            const qBudget = query(budgetsRef, where("categoryId", "==", categoryId));
+            const budgetSnap = await getDocs(qBudget);
+
+            if (budgetSnap.empty) {
+                 // If no budget exists, should we create one? Let's return an error for now.
+                 return `Erro: Orçamento para a categoria "${input.categoryName}" não encontrado. Você pode criar um primeiro.`;
+            }
+
+            // Assuming one budget per category
+            const budgetDocRef = budgetSnap.docs[0].ref;
+            await updateDoc(budgetDocRef, { amount: input.newAmount });
+
+            return `Orçamento para "${input.categoryName}" atualizado para R$ ${input.newAmount}.`;
+        } catch (e: any) {
+            return `Erro ao atualizar orçamento: ${e.message}`;
         }
-
-        const budgetDocRef = budgetSnap.docs[0].ref;
-        await updateDoc(budgetDocRef, { amount: input.newAmount });
-
-        return `Orçamento para "${input.categoryName}" atualizado para R$ ${input.newAmount}.`;
     }
 );

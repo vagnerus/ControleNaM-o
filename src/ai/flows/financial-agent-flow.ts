@@ -2,21 +2,11 @@
 /**
  * @fileOverview A financial agent that can perform actions based on user commands.
  * - financialAgent - A function that executes financial commands.
- * - FinancialAgentInput - The input type for the financialAgent function.
- * - FinancialAgentOutput - The output type for the financialAgent function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { addTransactionTool, updateBudgetByCategoryNameTool } from '../tools/financial-tools';
+import { addTransactionTool, updateBudgetByCategoryNameTool, FinancialAgentInputSchema, FinancialAgentOutputSchema, type FinancialAgentInput, type FinancialAgentOutput } from '../tools/financial-tools';
 
-export const FinancialAgentInputSchema = z.string();
-export type FinancialAgentInput = z.infer<typeof FinancialAgentInputSchema>;
-
-export const FinancialAgentOutputSchema = z.object({
-  response: z.string().describe('A confirmation message to the user about the action taken, in pt-BR.'),
-});
-export type FinancialAgentOutput = z.infer<typeof FinancialAgentOutputSchema>;
 
 export async function financialAgent(prompt: FinancialAgentInput): Promise<FinancialAgentOutput> {
   return financialAgentFlow(prompt);
@@ -37,13 +27,24 @@ const financialAgentFlow = ai.defineFlow(
       }
     });
 
+    // Handle tool calls if any
     for await (const part of llmResponse.stream()) {
       if (part.toolRequest) {
+        // This assumes your tools are implemented to handle the request and return a final answer.
+        // The `next()` function calls the tool and the `output()` on the result gets the response.
         const toolOutput = await part.toolRequest.next();
-        return toolOutput.output();
+        const output = await toolOutput.output();
+        
+        // If the tool returns a string, wrap it in the expected output format.
+        if (typeof output === 'string') {
+            return { response: output };
+        }
+        // If the tool returns the correct object, just return it.
+        return output as FinancialAgentOutput;
       }
     }
     
+    // Fallback to the LLM's text response if no tool was called.
     return llmResponse.output() ?? { response: "Não entendi o que você quis dizer. Pode tentar de outra forma?" };
   }
 );
