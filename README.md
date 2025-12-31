@@ -1,5 +1,3 @@
-# Firebase Studio
+# ControleNaM-o
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Este é um projeto Next.js inicializado com o Firebase Studio.
