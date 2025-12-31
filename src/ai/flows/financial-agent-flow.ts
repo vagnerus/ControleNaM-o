@@ -30,22 +30,20 @@ const financialAgentFlow = ai.defineFlow(
   },
   async (prompt) => {
     const llmResponse = await ai.generate({
-      prompt: `Você é um assistente financeiro. O usuário fornecerá um comando e você executará a ação apropriada usando as ferramentas disponíveis. Responda em português do Brasil (pt-BR). Comando: ${prompt}`,
+      prompt: `Você é um assistente financeiro. O usuário fornecerá um comando e você executará a ação apropriada usando as ferramentas disponíveis. Se o comando for uma pergunta ou um bate-papo, responda de forma amigável. Responda em português do Brasil (pt-BR). Comando do usuário: ${prompt}`,
       tools: [addTransactionTool, updateBudgetByCategoryNameTool],
+      output: {
+        schema: FinancialAgentOutputSchema,
+      }
     });
 
-    const toolResponse = llmResponse.toolRequest();
-
-    if (toolResponse) {
-      // Here you could add more complex logic, but for now we just confirm the tool output.
-      const toolOutput = await toolResponse.next();
-      return {
-        response: toolOutput?.output as string || "Ação concluída, mas não recebi uma confirmação clara.",
-      };
+    for await (const part of llmResponse.stream()) {
+      if (part.toolRequest) {
+        const toolOutput = await part.toolRequest.next();
+        return toolOutput.output();
+      }
     }
-
-    return {
-      response: llmResponse.text(),
-    };
+    
+    return llmResponse.output() ?? { response: "Não entendi o que você quis dizer. Pode tentar de outra forma?" };
   }
 );
