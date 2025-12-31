@@ -6,9 +6,8 @@ import { getAuth } from 'firebase/auth';
 import { collection, getDocs, query, where, getFirestore, runTransaction, doc, addDoc, updateDoc, increment } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
-const { firestore, auth: firebaseAuth } = initializeFirebase();
-
 async function getCurrentUserId(): Promise<string> {
+    const { auth: firebaseAuth } = initializeFirebase();
     // This is a placeholder for getting the current user's ID.
     // In a real application, you would get this from the session or auth state.
     const user = firebaseAuth.currentUser;
@@ -42,6 +41,7 @@ export const addTransactionTool = ai.defineTool(
         outputSchema: z.string(),
     },
     async (input) => {
+        const { firestore } = initializeFirebase();
         const userId = await getCurrentUserId();
         
         // Find category by name
@@ -99,6 +99,7 @@ export const updateBudgetByCategoryNameTool = ai.defineTool(
         outputSchema: z.string(),
     },
     async (input) => {
+        const { firestore } = initializeFirebase();
         const userId = await getCurrentUserId();
 
         const budgetsRef = collection(firestore, `users/${userId}/budgets`);
