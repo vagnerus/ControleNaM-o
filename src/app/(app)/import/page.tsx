@@ -73,6 +73,35 @@ export default function ImportPage() {
         const defaultAccountId = accounts && accounts.length > 0 ? accounts[0].id : '';
         const defaultCategoryId = categories && categories.length > 0 ? categories.find(c => c.name.toLowerCase().includes('outro'))?.id || categories[0].id : '';
 
+        const parseAmount = (val: string): number => {
+            if (!val) return 0;
+            // Remove currency symbols and spaces
+            let clean = val.replace(/[R$\s]/g, '');
+            
+            // Check if it uses comma as decimal (PT-BR)
+            // Pattern: something,XX where X is digit
+            if (/, \d{2}$/.test(clean.trim()) || (clean.includes(',') && !clean.includes('.'))) {
+                return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+            }
+            
+            // If it has both, and comma is after dot, it's PT-BR: 1.234,56
+            if (clean.includes('.') && clean.includes(',')) {
+                if (clean.indexOf('.') < clean.indexOf(',')) {
+                    return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+                } else {
+                    // US format: 1,234.56
+                    return parseFloat(clean.replace(/,/g, ''));
+                }
+            }
+
+            // Fallback for values like "1.234" (no decimals) or "1234,56"
+            if (clean.includes(',') && !clean.includes('.')) {
+                return parseFloat(clean.replace(',', '.'));
+            }
+
+            return parseFloat(clean.replace(/,/g, ''));
+        };
+
         return dataRows.map((row, index) => {
             try {
                 let dateStr = row[colMap.date] || '';
@@ -100,8 +129,7 @@ export default function ImportPage() {
                 if (!isValid(date)) date = new Date();
 
                 let amountStr = row[colMap.amount] || '0';
-                // Handle PT-BR numbers (1.234,56 -> 1234.56 or -1.234,56)
-                let amount = parseFloat(amountStr.replace(/\./g, '').replace(',', '.'));
+                let amount = parseAmount(amountStr);
                 
                 let type: 'income' | 'expense' = amount >= 0 ? 'income' : 'expense';
                 const typeVal = (row[colMap.type] || '').toLowerCase();
