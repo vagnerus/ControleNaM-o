@@ -26,7 +26,7 @@ import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { Budget, Category } from "@/lib/types";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { collection, query, where } from "firebase/firestore";
 import { MagicInput } from "../common/MagicInput";
 import { AddCategoryDialog } from "../categories/AddCategoryDialog";
@@ -76,11 +76,13 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
     }
   }, [budget, form]);
 
-  const availableCategories = expenseCategories?.filter(
-    (cat) => 
-        !existingBudgets?.some((b) => b.categoryId === cat.id) ||
-        (budget && budget.categoryId === cat.id)
-  );
+  const availableCategories = useMemo(() => {
+      return expenseCategories?.filter(
+        (cat) => 
+            !existingBudgets?.some((b) => b.categoryId === cat.id) ||
+            (budget && budget.categoryId === cat.id)
+      ) || [];
+  }, [expenseCategories, existingBudgets, budget]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -95,37 +97,39 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
     try {
         const category = expenseCategories?.find(c => c.id === values.categoryId);
         if (!category) {
-            toast({ variant: "destructive", title: "Erro!", description: "Categoria inválida ou não encontrada. Tente recarregar." });
+            toast({ variant: "destructive", title: "Erro!", description: "Categoria não encontrada." });
+            return;
+        }
+
+        const numericAmount = Number(values.amount);
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            toast({ variant: "destructive", title: "Erro!", description: "Valor inválido." });
             return;
         }
 
         const payload = {
-            ...values,
+            categoryId: values.categoryId,
+            amount: numericAmount,
             categoryName: category.name,
-        }
-        
-        // Ensure amount is a number
-        if (typeof payload.amount !== 'number' || isNaN(payload.amount)) {
-             toast({ variant: "destructive", title: "Erro!", description: "Valor inválido." });
-             return;
         }
 
         await saveBudget(firestore, user.uid, payload, budget?.id);
+        
         toast({
             title: "Sucesso!",
-            description: budget ? "Orçamento atualizado com sucesso." : "Orçamento adicionado com sucesso.",
+            description: budget ? "Orçamento atualizado." : "Orçamento adicionado.",
         });
         
-        form.reset();
+        // Finalize before reset to avoid hydration/render conflicts
         if (onFinished) {
             onFinished();
         }
     } catch (error) {
-        console.error("Error saving budget (caught in onSubmit):", error);
+        console.error("Critical error saving budget:", error);
         toast({
             variant: "destructive",
-            title: "Erro!",
-            description: "Não foi possível salvar o orçamento. Verifique os dados e tente novamente.",
+            title: "Erro fatal",
+            description: "Ocorreu um erro ao salvar. Tente novamente ou recarregue a página.",
         });
     }
   }
@@ -144,11 +148,11 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
                {isLoadingCategories ? (
                    <div className="flex items-center justify-center p-4 border rounded-md">
                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                       <span className="ml-2 text-sm text-muted-foreground">Carregando categorias...</span>
+                       <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
                    </div>
                ) : !hasCategories ? (
                   <div className="flex flex-col gap-2 border border-dashed p-4 rounded-md items-center justify-center text-center">
-                      <p className="text-sm text-muted-foreground">Você não possui categorias de despesa.</p>
+                      <p className="text-sm text-muted-foreground">Crie uma categoria primeiro.</p>
                       <AddCategoryDialog>
                         <DialogTrigger asChild>
                             <Button type="button" variant="secondary" size="sm">
@@ -159,29 +163,31 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
                       </AddCategoryDialog>
                   </div>
                ) : (
-                  <div className="flex gap-2">
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
-                        {availableCategories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <AddCategoryDialog>
-                       <DialogTrigger asChild>
-                         <Button type="button" size="icon" variant="outline" title="Adicionar Nova Categoria">
-                            <PlusCircle className="h-4 w-4" />
-                         </Button>
-                       </DialogTrigger>
-                    </AddCategoryDialog>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma categoria" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
+                            {availableCategories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <AddCategoryDialog>
+                        <DialogTrigger asChild>
+                            <Button type="button" size="icon" variant="outline" title="Nova Categoria">
+                                <PlusCircle className="h-4 w-4" />
+                            </Button>
+                        </DialogTrigger>
+                        </AddCategoryDialog>
+                    </div>
                   </div>
                )}
               <FormMessage />
