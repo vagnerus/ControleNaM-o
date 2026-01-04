@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getIconComponent } from "@/lib/data";
-import { ScrollArea } from "../ui/scroll-area";
 
 
 const formSchema = z.object({
@@ -164,7 +163,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                         </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
-                       <ScrollArea className="h-72">
+                       <div className="h-72 overflow-y-auto">
                          <div className="grid grid-cols-5 gap-2 p-4">
                             {ICONS.map((icon) => {
                                 const IconComponent = icon.component;
@@ -173,7 +172,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                                         key={icon.id}
                                         variant="outline"
                                         size="icon"
-                                        className={cn("h-12 w-12", field.value === icon.name && "border-primary ring-2 ring-primary")}
+                                        className={cn("h-12 w-12 shrink-0", field.value === icon.name && "border-primary ring-2 ring-primary")}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             form.setValue('icon', icon.name, { shouldValidate: true });
@@ -184,7 +183,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                                 )
                             })}
                         </div>
-                       </ScrollArea>
+                       </div>
                     </PopoverContent>
                 </Popover>
                 <FormMessage />

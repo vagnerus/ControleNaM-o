@@ -92,31 +92,40 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
         return;
     }
 
-    const category = expenseCategories?.find(c => c.id === values.categoryId);
-    if (!category) {
-        toast({ variant: "destructive", title: "Erro!", description: "Categoria inválida ou não encontrada. Tente recarregar." });
-        return;
-    }
-
-    const payload = {
-        ...values,
-        categoryName: category.name,
-    }
-
     try {
+        const category = expenseCategories?.find(c => c.id === values.categoryId);
+        if (!category) {
+            toast({ variant: "destructive", title: "Erro!", description: "Categoria inválida ou não encontrada. Tente recarregar." });
+            return;
+        }
+
+        const payload = {
+            ...values,
+            categoryName: category.name,
+        }
+        
+        // Ensure amount is a number
+        if (typeof payload.amount !== 'number' || isNaN(payload.amount)) {
+             toast({ variant: "destructive", title: "Erro!", description: "Valor inválido." });
+             return;
+        }
+
         await saveBudget(firestore, user.uid, payload, budget?.id);
         toast({
             title: "Sucesso!",
             description: budget ? "Orçamento atualizado com sucesso." : "Orçamento adicionado com sucesso.",
         });
+        
         form.reset();
-        onFinished?.();
+        if (onFinished) {
+            onFinished();
+        }
     } catch (error) {
-        console.error("Error saving budget:", error);
+        console.error("Error saving budget (caught in onSubmit):", error);
         toast({
             variant: "destructive",
             title: "Erro!",
-            description: "Não foi possível salvar o orçamento.",
+            description: "Não foi possível salvar o orçamento. Verifique os dados e tente novamente.",
         });
     }
   }
