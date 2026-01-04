@@ -38,6 +38,7 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const spent = useMemo(() => {
     const today = new Date();
@@ -79,6 +80,7 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
     }
     deleteBudget(firestore, user.uid, budget.id);
     toast({ title: 'Sucesso', description: 'Orçamento removido.' });
+    setIsDeleteDialogOpen(false);
   };
 
   return (
@@ -89,8 +91,25 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
         budget={budget}
       />
 
-      <AlertDialog>
-        <Card>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                    seu planejamento para esta categoria.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Card>
             <CardHeader className="flex-row items-start justify-between pb-2">
                 <CardTitle className="text-base font-semibold">{budget.categoryName}</CardTitle>
                 <DropdownMenu>
@@ -104,12 +123,13 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                         </DropdownMenuItem>
-                        <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir
-                            </DropdownMenuItem>
-                        </AlertDialogTrigger>
+                        <DropdownMenuItem 
+                            onSelect={() => setIsDeleteDialogOpen(true)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </CardHeader>
@@ -128,22 +148,6 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
                 </p>
             </CardContent>
         </Card>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o
-                    seu planejamento para esta categoria.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                    Excluir
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

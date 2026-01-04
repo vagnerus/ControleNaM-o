@@ -47,3 +47,5 @@ pnpm-debug.log*
 /hosting.sessions.log
 /.firebase/
 firebase-debug.log
+.vercel
+.env*.local

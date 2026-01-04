@@ -1,7 +1,9 @@
 import type {NextConfig} from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   // output: 'export', // Commented out for Vercel deployment. Uncomment for Capacitor build.
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     unoptimized: true, // Keep true if you want to switch back to export easily, or remove to use Vercel Image Optimization
     remotePatterns: [

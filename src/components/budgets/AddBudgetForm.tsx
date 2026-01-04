@@ -111,6 +111,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
             categoryId: values.categoryId,
             amount: numericAmount,
             categoryName: category.name,
+            userAccountId: user.uid, // Required by firestore.rules
         }
 
         await saveBudget(firestore, user.uid, payload, budget?.id);
@@ -124,12 +125,12 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
         if (onFinished) {
             onFinished();
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Critical error saving budget:", error);
         toast({
             variant: "destructive",
             title: "Erro fatal",
-            description: "Ocorreu um erro ao salvar. Tente novamente ou recarregue a página.",
+            description: `Ocorreu um erro: ${error?.message || "Desconhecido"}`,
         });
     }
   }
