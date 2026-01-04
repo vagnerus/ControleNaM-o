@@ -77,7 +77,7 @@ export function AddRecurringForm({ onFinished, transaction }: AddRecurringFormPr
   const transactionType = form.watch("type");
 
   const categoriesQuery = useMemoFirebase(() => 
-    user ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', transactionType)) : null
+    user && transactionType ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', transactionType)) : null
   , [firestore, user, transactionType]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
 

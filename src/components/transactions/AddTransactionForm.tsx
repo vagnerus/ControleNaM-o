@@ -117,7 +117,7 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
 
   // Fetch user's custom categories
   const categoriesQuery = useMemoFirebase(() => 
-    user ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', transactionType)) : null
+    user && transactionType ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', transactionType)) : null
   , [firestore, user, transactionType]);
   const { data: categories } = useCollection<Category>(categoriesQuery);
 
