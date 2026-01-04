@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteCard } from "@/lib/data.tsx";
+import { deleteCard } from "@/lib/data";
 import { useFirestore, useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -73,10 +73,11 @@ export function CreditCardView({ cardData, accounts, categories, tags }: CreditC
               </div>
               <div className="flex items-center gap-2">
                 <Button asChild variant="outline" size="sm">
-                    <Link href={`/cards/${cardData.id}`}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Ver Fatura
-                    </Link>
+          <Link href={`/cards/statement?cardId=${cardData.id}`}>
+            <Button variant="outline" className="w-full">
+              Ver Fatura Detalhada
+            </Button>
+          </Link>
                 </Button>
                 <AlertDialog>
                     <DropdownMenu>

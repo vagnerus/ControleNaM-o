@@ -12,13 +12,19 @@ import { Button } from "@/components/ui/button";
 import { FileUp, Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { saveTransaction, saveAccount, saveCategory, saveCard } from '@/lib/data.tsx';
+import { saveTransaction, saveAccount, saveCategory, saveCard } from '@/lib/data';
 import { format } from 'date-fns';
 
-type ParsedTransaction = Partial<Omit<Transaction, 'id' | 'accountId' | 'categoryId'>> & {
+type ParsedTransaction = {
+    date: string;
+    description: string;
+    amount: number;
+    type: 'income' | 'expense';
     categoryName: string;
     accountName: string;
     cardName?: string;
+    isInstallment: boolean;
+    totalInstallments?: number;
     rawRow: string;
 };
 
@@ -52,7 +58,7 @@ export default function ImportPage() {
 
             try {
                 const rows = text.split('\n').slice(1); // Skip header
-                const transactions: ParsedTransaction[] = rows
+                const transactions = rows
                     .map(row => row.trim())
                     .filter(row => row)
                     .map(row => {
@@ -61,7 +67,7 @@ export default function ImportPage() {
 
                         const [date, description, amount, type, categoryName, accountName, cardName, isInstallmentStr, totalInstallmentsStr] = values;
                         
-                        return {
+                        const t: ParsedTransaction = {
                             date,
                             description,
                             amount: parseFloat(amount),
@@ -73,6 +79,7 @@ export default function ImportPage() {
                             totalInstallments: isInstallmentStr === 'SIM' ? parseInt(totalInstallmentsStr, 10) : undefined,
                             rawRow: row,
                         };
+                        return t;
                     }).filter((t): t is ParsedTransaction => t !== null);
 
                 setParsedTransactions(transactions);
@@ -126,32 +133,35 @@ export default function ImportPage() {
                 let accountId = accountsMap.get(t.accountName);
                 if (!accountId) {
                     const newAccountDoc = await saveAccount(firestore, user.uid, { name: t.accountName, balance: 0, icon: 'Landmark' });
-                    const newAccount = { id: newAccountDoc.id, name: t.accountName };
-                    accountsMap.set(t.accountName, newAccount.id!);
-                    accountId = newAccount.id;
+                    const newId = (newAccountDoc as any)?.id;
+                    if (!newId) continue;
+                    accountId = newId;
+                    accountsMap.set(t.accountName, newId);
                 }
 
                 let categoryId = categoriesMap.get(t.categoryName);
                 if (!categoryId) {
                     const newCategoryDoc = await saveCategory(firestore, user.uid, { name: t.categoryName, type: t.type!, icon: 'Receipt' });
-                    const newCategory = { id: newCategoryDoc.id, name: t.categoryName };
-                    categoriesMap.set(t.categoryName, newCategory.id!);
-                    categoryId = newCategory.id;
+                    const newId = (newCategoryDoc as any)?.id;
+                    if (!newId) continue;
+                    categoryId = newId;
+                    categoriesMap.set(t.categoryName, newId);
                 }
                 
                 let creditCardId: string | undefined = undefined;
                 if(t.cardName) {
                     creditCardId = cardsMap.get(t.cardName);
                      if (!creditCardId) {
-                        // This part is tricky as we don't have all card details in the CSV
-                        // We create a placeholder card. The user should edit it later.
                         const newCardDoc = await saveCard(firestore, user.uid, { name: t.cardName, last4: '0000', limit: 0, closingDate: 1, dueDate: 10, brand: 'other' });
-                        const newCard = { id: newCardDoc.id, name: t.cardName };
-                        cardsMap.set(t.cardName, newCard.id!);
-                        creditCardId = newCard.id;
+                        const newId = (newCardDoc as any)?.id;
+                        if (newId) {
+                            creditCardId = newId;
+                            cardsMap.set(t.cardName, newId);
+                        }
                     }
                 }
 
+                if (!categoryId || !accountId) continue;
 
                 const transactionPayload: Omit<Transaction, 'id'> = {
                     date: new Date(t.date!).toISOString(),
@@ -161,7 +171,7 @@ export default function ImportPage() {
                     categoryId,
                     accountId,
                     creditCardId,
-                    isInstallment: t.isInstallment,
+                    isInstallment: !!t.isInstallment,
                     totalInstallments: t.totalInstallments,
                 };
                 

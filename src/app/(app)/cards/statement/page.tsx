@@ -1,37 +1,41 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Suspense } from 'react';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import type { CreditCard, Transaction, Category, Tag, Account } from '@/lib/types';
 import { Header } from "@/components/common/Header";
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TransactionList } from '@/components/transactions/TransactionList';
 import { Button } from '@/components/ui/button';
-import { format, subMonths, addMonths, startOfMonth, endOfMonth, setDate, isAfter, isBefore, isWithinInterval } from 'date-fns';
+import { format, subMonths, addMonths, setDate, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BrandIcon } from '@/components/cards/BrandIcon';
+import { useSearchParams } from 'next/navigation';
 
-export default function CardStatementPage({ params }: { params: { cardId: string } }) {
+function CardStatementContent() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const searchParams = useSearchParams();
+  const cardId = searchParams.get('cardId');
 
   const cardRef = useMemoFirebase(() => 
-    user ? doc(firestore, 'users', user.uid, 'creditCards', params.cardId) : null
-  , [firestore, user, params.cardId]);
+    user && cardId ? doc(firestore, 'users', user.uid, 'creditCards', cardId) : null
+  , [firestore, user, cardId]);
 
   const { data: card, isLoading: cardLoading } = useDoc<CreditCard>(cardRef);
   
   // Fetch all transactions, including installment purchases
   const transactionsQuery = useMemoFirebase(() => 
-    user ? query(
+    user && cardId ? query(
         collection(firestore, 'users', user.uid, 'transactions'), 
-        where('creditCardId', '==', params.cardId)
+        where('creditCardId', '==', cardId)
     ) : null
-  , [firestore, user, params.cardId]);
+  , [firestore, user, cardId]);
 
   const { data: transactions, isLoading: transactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
@@ -178,4 +182,12 @@ export default function CardStatementPage({ params }: { params: { cardId: string
       </main>
     </>
   );
+}
+
+export default function CardStatementPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
+            <CardStatementContent />
+        </Suspense>
+    )
 }

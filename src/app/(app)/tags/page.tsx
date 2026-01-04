@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { AddTagForm } from '@/components/tags/AddTagForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { deleteTag } from '@/lib/data.tsx';
+import { deleteTag } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';

@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { signUpWithEmail } from '@/firebase/auth/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { FirebaseError } from 'firebase/app';
 
 
@@ -29,6 +29,7 @@ const formSchema = z.object({
 
 export function SignupForm() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,7 +42,7 @@ export function SignupForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await signUpWithEmail(auth, values.email, values.password, values.name);
+      await signUpWithEmail(auth, firestore, values.email, values.password, values.name);
       // The redirect is handled by the AuthGate
     } catch (error) {
        let description = 'Ocorreu um erro desconhecido. Tente novamente.';

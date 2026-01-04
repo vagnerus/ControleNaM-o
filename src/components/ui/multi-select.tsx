@@ -106,7 +106,7 @@ export function MultiSelect({
   }, [options])
 
   const groupedOptions = sortedOptions.reduce((acc, option) => {
-    const key = option.group || ""
+    const key = String(option.group || "")
     if (!acc[key]) {
       acc[key] = []
     }

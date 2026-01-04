@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { RecurringTransaction, Account, Category } from "@/lib/types";
-import { deleteRecurringTransaction } from "@/lib/data.tsx";
+import { deleteRecurringTransaction } from "@/lib/data";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";

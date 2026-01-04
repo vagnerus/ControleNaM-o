@@ -45,7 +45,7 @@ export function NotificationsSettingsForm() {
 
 
     const handleSwitchChange = (id: NotificationSetting, checked: boolean) => {
-        setSettings(prev => {
+        setSettings((prev: ReturnType<typeof getInitialSettings>) => {
             const newSettings = { ...prev, [id]: checked };
             // If the main switch is turned off, turn all others off.
             if (id === 'receiveNotifications' && !checked) {

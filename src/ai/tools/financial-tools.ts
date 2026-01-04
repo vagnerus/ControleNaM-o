@@ -6,7 +6,9 @@ import { collection, getDocs, query, where, getFirestore, runTransaction, doc, a
 import { initializeFirebase } from '@/firebase';
 
 // Schemas and types moved from financial-agent-flow.ts
-export const FinancialAgentInputSchema = z.string();
+export const FinancialAgentInputSchema = z.object({
+  prompt: z.string(),
+});
 export type FinancialAgentInput = z.infer<typeof FinancialAgentInputSchema>;
 
 export const FinancialAgentOutputSchema = z.object({

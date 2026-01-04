@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Bot, User, Send, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { financialAgent } from '@/ai/flows/financial-agent-flow';
+import { financialAgent } from '@/lib/ai-chat-client';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -50,7 +50,8 @@ export function AIChatSheet() {
         setIsLoading(true);
 
         try {
-            const result = await financialAgent(input);
+            const agentInput = { prompt: input };
+            const result = await financialAgent(agentInput);
             const botMessage: Message = {
                 id: `bot-${Date.now()}`,
                 text: result.response,

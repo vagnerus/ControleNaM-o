@@ -9,7 +9,7 @@ import type { Transaction, Category } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { CategoryChart } from '@/components/charts/CategoryChart';
-import { getIconComponent } from '@/lib/data.tsx';
+import { getIconComponent } from '@/lib/data';
 import { MonthlyOverviewChart, type MonthlyData } from '@/components/charts/MonthlyOverviewChart';
 import { subMonths, format, getMonth, getYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

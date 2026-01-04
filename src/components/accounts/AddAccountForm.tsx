@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { saveAccount } from "@/lib/data.tsx";
+import { saveAccount } from "@/lib/data";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import { MagicInput } from "../common/MagicInput";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
-import { getBankIcon, BANK_ICONS, BankIcon } from "@/lib/data.tsx";
+import { getBankIcon, BANK_ICONS, BankIcon } from "@/lib/data";
 import { ScrollArea } from "../ui/scroll-area";
 import Image from "next/image";
 

@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveCategory, ICONS } from "@/lib/data.tsx";
+import { saveCategory, ICONS } from "@/lib/data";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
@@ -33,7 +33,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { getIconComponent } from "@/lib/data.tsx";
+import { getIconComponent } from "@/lib/data";
 import { ScrollArea } from "../ui/scroll-area";
 
 

@@ -12,6 +12,7 @@ import type { Account, Category, Tag, Transaction, RecurringTransaction } from '
 import { Loader2, Repeat } from 'lucide-react';
 import { isSameDay, format, startOfMonth, endOfMonth, isWithinInterval, addMonths, setDate, isFuture } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export default function CalendarPage() {
     const { user } = useUser();
@@ -129,11 +130,20 @@ export default function CalendarPage() {
                             day: "h-16 w-full p-1 font-normal aria-selected:opacity-100",
                         }}
                         components={{
-                            DayContent: ({ date }) => {
+                            Day: ({ day, modifiers, ...props }) => {
+                                const date = day.date;
                                 const dayKey = format(date, 'yyyy-MM-dd');
                                 const info = dayInfo.get(dayKey);
                                 return (
-                                    <div className="relative h-full w-full flex items-start justify-end flex-col p-1">
+                                    <button
+                                        {...props as any}
+                                        className={cn(
+                                            props.className,
+                                            "relative h-full w-full flex items-start justify-end flex-col p-1",
+                                            modifiers.selected && "bg-primary text-primary-foreground",
+                                            modifiers.today && "bg-accent text-accent-foreground"
+                                        )}
+                                    >
                                         <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">{date.getDate()}</span>
                                         {(info?.income || info?.expense || info?.future) && (
                                             <div className="flex space-x-1 self-center items-center">
@@ -142,7 +152,7 @@ export default function CalendarPage() {
                                                 {info.future && <Repeat className="h-3 w-3 text-blue-500" />}
                                             </div>
                                         )}
-                                    </div>
+                                    </button>
                                 );
                             }
                         }}
@@ -170,7 +180,7 @@ export default function CalendarPage() {
                                     { (transaction as any).isFuture && <Badge variant="outline" className="border-blue-500 text-blue-500">Previsto</Badge> }
                                     <div className="flex-grow">
                                         <p className="font-medium">{transaction.description}</p>
-                                        <p className="text-sm text-muted-foreground">{categories.find(c => c.id === transaction.categoryId)?.name}</p>
+                                        <p className="text-sm text-muted-foreground">{categories?.find(c => c.id === transaction.categoryId)?.name}</p>
                                     </div>
                                     <div className={`font-semibold ${transaction.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(transaction.amount)}
