@@ -39,13 +39,19 @@ export function GoalCard({ goal }: GoalCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const image = getPlaceholderImage(goal.imageId);
-  const percentage = (goal.currentAmount / goal.targetAmount) * 100;
+  
+  // Safety checks for amounts
+  const currentAmount = goal.currentAmount || 0;
+  const targetAmount = goal.targetAmount || 0;
+  
+  const percentage = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+  const displayPercentage = isFinite(percentage) ? percentage : 0;
   
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(value || 0);
 
   const handleDelete = () => {
     if (!user) {
@@ -116,11 +122,11 @@ export function GoalCard({ goal }: GoalCardProps) {
       </CardHeader>
       <CardContent className="flex-grow p-6 pt-2">
         <div className="flex justify-between items-baseline mb-2">
-            <span className="text-2xl font-bold">{formatCurrency(goal.currentAmount)}</span>
-            <span className="text-sm font-medium text-muted-foreground">de {formatCurrency(goal.targetAmount)}</span>
+            <span className="text-2xl font-bold">{formatCurrency(currentAmount)}</span>
+            <span className="text-sm font-medium text-muted-foreground">de {formatCurrency(targetAmount)}</span>
         </div>
-        <Progress value={percentage} />
-         <p className="text-sm text-muted-foreground text-right mt-1">{percentage.toFixed(0)}% concluído</p>
+        <Progress value={displayPercentage} />
+         <p className="text-sm text-muted-foreground text-right mt-1">{displayPercentage.toFixed(0)}% concluído</p>
       </CardContent>
       <CardFooter>
         <p className="text-sm text-muted-foreground w-full text-center">

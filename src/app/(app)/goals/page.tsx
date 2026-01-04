@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { FinancialGoal } from '@/lib/types';
 import { Header } from "@/components/common/Header";
 import { GoalCard } from "@/components/goals/GoalCard";
@@ -14,12 +14,12 @@ export default function GoalsPage() {
   const firestore = useFirestore();
 
   const goalsQuery = useMemoFirebase(() => 
-    user ? collection(firestore, 'users', user.uid, 'financialGoals') : null
+    user ? query(collection(firestore, 'users', user.uid, 'financialGoals')) : null
   , [firestore, user]);
 
   const { data: goals, isLoading } = useCollection<FinancialGoal>(goalsQuery);
   
-  if (isLoading) {
+  if (!user || isLoading) {
     return (
         <>
             <Header title="Objetivos Financeiros">

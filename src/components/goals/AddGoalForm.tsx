@@ -54,11 +54,11 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
     defaultValues: {
       name: goal?.name || "",
       // @ts-ignore
-      targetAmount: goal?.targetAmount || undefined,
+      targetAmount: goal?.targetAmount ?? undefined,
       // @ts-ignore
-      currentAmount: goal?.currentAmount || undefined,
+      currentAmount: goal?.currentAmount ?? undefined,
       // @ts-ignore
-      monthlySaving: goal?.monthlySaving || undefined,
+      monthlySaving: goal?.monthlySaving ?? undefined,
       imageId: goal?.imageId || "",
     },
   });
@@ -90,7 +90,11 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
     }
 
     try {
-        saveGoal(firestore, user.uid, values, goal?.id);
+        const payload = {
+            ...values,
+            userAccountId: user.uid,
+        };
+        await saveGoal(firestore, user.uid, payload, goal?.id);
         toast({
             title: "Sucesso!",
             description: goal ? "Objetivo atualizado com sucesso." : "Objetivo adicionado com sucesso.",

@@ -120,6 +120,7 @@ export function AddRecurringForm({ onFinished, transaction }: AddRecurringFormPr
         endDate: values.endDate?.toISOString(),
         categoryName: category?.name,
         accountName: account?.name,
+        userAccountId: user.uid,
     };
 
     try {

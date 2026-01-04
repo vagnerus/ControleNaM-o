@@ -46,7 +46,11 @@ export function AddTagForm() {
     }
 
     try {
-        saveTag(firestore, user.uid, values);
+        const payload = {
+            ...values,
+            userAccountId: user.uid,
+        };
+        await saveTag(firestore, user.uid, payload);
         toast({
             title: "Sucesso!",
             description: "Tag adicionada com sucesso.",
