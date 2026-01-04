@@ -94,10 +94,15 @@ export function AddTransactionForm({ onFinished, transaction }: AddTransactionFo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: "expense",
-      amount: 0,
+      // @ts-ignore
+      type: undefined,
+      // @ts-ignore
+      amount: undefined,
       description: "",
-      date: new Date(),
+      // @ts-ignore
+      date: undefined,
+      accountId: "",
+      categoryId: "",
       creditCardId: "",
       attachmentUrls: [],
       isInstallment: false,

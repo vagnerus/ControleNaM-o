@@ -62,7 +62,8 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       categoryId: budget?.categoryId || "",
-      amount: budget?.amount || 0,
+      // @ts-ignore
+      amount: budget?.amount || undefined,
     },
   });
 

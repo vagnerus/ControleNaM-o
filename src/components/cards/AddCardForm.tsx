@@ -55,7 +55,8 @@ export function AddCardForm({ onFinished, card }: AddCardFormProps) {
     defaultValues: {
       name: card?.name || "",
       last4: card?.last4 || "",
-      limit: card?.limit || 0,
+      // @ts-ignore
+      limit: card?.limit || undefined,
       closingDate: card?.closingDate,
       dueDate: card?.dueDate,
       brand: card?.brand

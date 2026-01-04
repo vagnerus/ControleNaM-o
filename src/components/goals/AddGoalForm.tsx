@@ -53,9 +53,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: goal?.name || "",
-      targetAmount: goal?.targetAmount || 0,
-      currentAmount: goal?.currentAmount || 0,
-      monthlySaving: goal?.monthlySaving || 0,
+      // @ts-ignore
+      targetAmount: goal?.targetAmount || undefined,
+      // @ts-ignore
+      currentAmount: goal?.currentAmount || undefined,
+      // @ts-ignore
+      monthlySaving: goal?.monthlySaving || undefined,
       imageId: goal?.imageId || "",
     },
   });
