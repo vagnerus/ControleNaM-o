@@ -48,8 +48,10 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      balance: 0,
-      icon: "Landmark",
+      // @ts-ignore
+      balance: undefined,
+      // @ts-ignore
+      icon: undefined,
     },
   });
 
@@ -64,7 +66,7 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
   }, [account, form]);
 
   const selectedIconId = form.watch('icon');
-  const SelectedIcon = getBankIcon(selectedIconId);
+  const SelectedIcon = selectedIconId ? getBankIcon(selectedIconId) : null;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -130,8 +132,14 @@ export function AddAccountForm({ onFinished, account }: AddAccountFormProps) {
                         <FormControl>
                             <Button variant="outline" role="combobox" className={cn("w-full justify-start", !field.value && "text-muted-foreground")}>
                                 <div className="flex items-center gap-2">
-                                    <SelectedIcon.component className="h-5 w-5" />
-                                    {SelectedIcon.name}
+                                    {SelectedIcon ? (
+                                        <>
+                                            <SelectedIcon.component className="h-5 w-5" />
+                                            {SelectedIcon.name}
+                                        </>
+                                    ) : (
+                                        "Selecione um banco"
+                                    )}
                                 </div>
                             </Button>
                         </FormControl>

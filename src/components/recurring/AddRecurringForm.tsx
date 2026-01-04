@@ -60,11 +60,17 @@ export function AddRecurringForm({ onFinished, transaction }: AddRecurringFormPr
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: transaction?.description || "",
-      amount: transaction?.amount || 0,
-      type: transaction?.type || "expense",
-      frequency: transaction?.frequency || "monthly",
-      startDate: transaction ? new Date(transaction.startDate) : new Date(),
+      // @ts-ignore
+      amount: transaction?.amount || undefined,
+      // @ts-ignore
+      type: transaction?.type || undefined,
+      // @ts-ignore
+      frequency: transaction?.frequency || undefined,
+      // @ts-ignore
+      startDate: transaction ? new Date(transaction.startDate) : undefined,
       endDate: transaction?.endDate ? new Date(transaction.endDate) : undefined,
+      accountId: "",
+      categoryId: "",
     },
   });
 
