@@ -56,7 +56,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
   const categoriesQuery = useMemoFirebase(() => 
     user ? query(collection(firestore, 'users', user.uid, 'categories'), where('type', '==', 'expense')) : null
   , [firestore, user]);
-  const { data: expenseCategories } = useCollection<Category>(categoriesQuery);
+  const { data: expenseCategories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,7 +94,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
 
     const category = expenseCategories?.find(c => c.id === values.categoryId);
     if (!category) {
-        toast({ variant: "destructive", title: "Erro!", description: "Categoria não encontrada." });
+        toast({ variant: "destructive", title: "Erro!", description: "Categoria inválida ou não encontrada. Tente recarregar." });
         return;
     }
 
@@ -104,7 +104,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
     }
 
     try {
-        saveBudget(firestore, user.uid, payload, budget?.id);
+        await saveBudget(firestore, user.uid, payload, budget?.id);
         toast({
             title: "Sucesso!",
             description: budget ? "Orçamento atualizado com sucesso." : "Orçamento adicionado com sucesso.",
@@ -121,6 +121,8 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
     }
   }
 
+  const hasCategories = expenseCategories && expenseCategories.length > 0;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -130,30 +132,49 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria</FormLabel>
-              <div className="flex gap-2">
-                <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
-                    {availableCategories?.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <AddCategoryDialog>
-                   <DialogTrigger asChild>
-                     <Button type="button" size="icon" variant="outline" title="Adicionar Nova Categoria">
-                        <PlusCircle className="h-4 w-4" />
-                     </Button>
-                   </DialogTrigger>
-                </AddCategoryDialog>
-              </div>
+               {isLoadingCategories ? (
+                   <div className="flex items-center justify-center p-4 border rounded-md">
+                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                       <span className="ml-2 text-sm text-muted-foreground">Carregando categorias...</span>
+                   </div>
+               ) : !hasCategories ? (
+                  <div className="flex flex-col gap-2 border border-dashed p-4 rounded-md items-center justify-center text-center">
+                      <p className="text-sm text-muted-foreground">Você não possui categorias de despesa.</p>
+                      <AddCategoryDialog>
+                        <DialogTrigger asChild>
+                            <Button type="button" variant="secondary" size="sm">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Criar Categoria
+                            </Button>
+                        </DialogTrigger>
+                      </AddCategoryDialog>
+                  </div>
+               ) : (
+                  <div className="flex gap-2">
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
+                        {availableCategories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <AddCategoryDialog>
+                       <DialogTrigger asChild>
+                         <Button type="button" size="icon" variant="outline" title="Adicionar Nova Categoria">
+                            <PlusCircle className="h-4 w-4" />
+                         </Button>
+                       </DialogTrigger>
+                    </AddCategoryDialog>
+                  </div>
+               )}
               <FormMessage />
             </FormItem>
           )}
@@ -176,7 +197,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !hasCategories}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar Orçamento
         </Button>

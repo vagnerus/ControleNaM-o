@@ -69,8 +69,8 @@ export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
     const handleFocus = () => {
       setIsEditing(true);
       // Show the raw number for editing, using comma as decimal separator for pt-BR
-      // If value is 0, show empty to allow typing fresh
-      const rawValue = value === 0 ? '' : String(value).replace('.', ',');
+      // If value is 0, undefined or null, show empty to allow typing fresh
+      const rawValue = (value === 0 || value === undefined || value === null) ? '' : String(value).replace('.', ',');
       setDisplayValue(rawValue);
     };
 
