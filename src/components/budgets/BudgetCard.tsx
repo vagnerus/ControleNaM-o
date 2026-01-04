@@ -46,7 +46,10 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
 
     return transactions
         .filter(t => {
+            if (!t.date) return false;
             const transactionDate = new Date(t.date);
+            if (isNaN(transactionDate.getTime())) return false; // Invalid date check
+
             return t.categoryId === budget.categoryId && 
                    t.type === 'expense' &&
                    transactionDate.getMonth() === currentMonth &&
@@ -64,7 +67,7 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
     }).format(value);
 
   const progressColor =
-    percentage > 90 ? "bg-destructive" : percentage > 75 ? "text-orange-500" : "bg-primary";
+    percentage > 90 ? "bg-destructive" : percentage > 75 ? "bg-orange-500" : "bg-primary";
     
   const textColor =
     percentage > 90 ? "text-destructive" : percentage > 75 ? "text-orange-500" : "text-muted-foreground";
