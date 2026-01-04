@@ -61,8 +61,10 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      type: "expense",
-      icon: "Receipt",
+      // @ts-ignore
+      type: undefined,
+      // @ts-ignore
+      icon: undefined,
     },
   });
 
@@ -77,7 +79,7 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
   }, [category, form]);
 
   const selectedIconName = form.watch('icon');
-  const SelectedIcon = getIconComponent(selectedIconName);
+  const SelectedIcon = selectedIconName ? getIconComponent(selectedIconName) : null;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -155,8 +157,8 @@ export function AddCategoryForm({ onFinished, category }: AddCategoryFormProps) 
                         <FormControl>
                             <Button variant="outline" role="combobox" className={cn("w-full justify-start", !field.value && "text-muted-foreground")}>
                                 <div className="flex items-center gap-2">
-                                    <SelectedIcon className="h-4 w-4" />
-                                    {field.value}
+                                    {SelectedIcon ? <SelectedIcon className="h-4 w-4" /> : null}
+                                    {field.value || "Selecione um ícone"}
                                 </div>
                             </Button>
                         </FormControl>

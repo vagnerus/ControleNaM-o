@@ -82,8 +82,16 @@ export default function ImportPage() {
                         return t;
                     }).filter((t): t is ParsedTransaction => t !== null);
 
-                setParsedTransactions(transactions);
-                toast({ title: 'Arquivo processado!', description: `${transactions.length} transações prontas para importação.` });
+                if (transactions.length === 0) {
+                     toast({ 
+                        variant: 'destructive', 
+                        title: 'Nenhuma transação encontrada', 
+                        description: 'O arquivo CSV não contém transações válidas ou não segue o formato esperado (9 colunas separadas por vírgula).' 
+                    });
+                } else {
+                    setParsedTransactions(transactions);
+                    toast({ title: 'Arquivo processado!', description: `${transactions.length} transações prontas para importação.` });
+                }
             } catch (error) {
                 console.error(error);
                 toast({ variant: 'destructive', title: 'Erro ao processar', description: 'O arquivo CSV parece estar mal formatado.' });
