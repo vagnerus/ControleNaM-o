@@ -172,7 +172,6 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
                             {availableCategories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>
                                 {cat.name}
