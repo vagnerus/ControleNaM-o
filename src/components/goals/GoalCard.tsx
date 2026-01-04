@@ -38,8 +38,13 @@ export function GoalCard({ goal }: GoalCardProps) {
   const firestore = useFirestore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const image = getPlaceholderImage(goal.imageId);
+  const placeholderImage = getPlaceholderImage(goal.imageId);
+  const fallbackUrl = "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=600&h=400&fit=crop"; // Generic financial goal image
   
+  const imageUrl = placeholderImage?.imageUrl || fallbackUrl;
+  const imageAlt = placeholderImage?.description || goal.name;
+  const imageHint = placeholderImage?.imageHint || "financial goal";
+
   // Safety checks for amounts
   const currentAmount = goal.currentAmount || 0;
   const targetAmount = goal.targetAmount || 0;
@@ -65,18 +70,17 @@ export function GoalCard({ goal }: GoalCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden">
       <CardHeader className="p-0">
-        <div className="relative">
-            {image && (
-                <div className="relative aspect-[16/9] w-full">
-                    <Image
-                    src={image.imageUrl}
-                    alt={image.description}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={image.imageHint}
-                    />
-                </div>
-            )}
+        <div className="relative bg-muted">
+            <div className="relative aspect-[16/9] w-full overflow-hidden">
+                <Image
+                src={imageUrl}
+                alt={imageAlt}
+                fill
+                className="object-cover transition-all hover:scale-105"
+                data-ai-hint={imageHint}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+            </div>
             <div className="absolute top-2 right-2">
                  <AlertDialog>
                     <DropdownMenu>
