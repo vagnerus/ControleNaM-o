@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
+import { MagicInput } from "../common/MagicInput";
 
 
 const formSchema = z.object({
@@ -127,7 +128,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
                 <FormItem>
                 <FormLabel>Valor Alvo</FormLabel>
                 <FormControl>
-                    <Input type="number" placeholder="20000.00" {...field} />
+                    <MagicInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="20.000,00"
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -140,7 +146,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
                 <FormItem>
                 <FormLabel>Valor Atual</FormLabel>
                 <FormControl>
-                    <Input type="number" placeholder="1500.00" {...field} />
+                    <MagicInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder="1.500,00"
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -154,7 +165,12 @@ export function AddGoalForm({ onFinished, goal }: AddGoalFormProps) {
             <FormItem>
               <FormLabel>Meta de Economia Mensal</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="500.00" {...field} />
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="500,00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

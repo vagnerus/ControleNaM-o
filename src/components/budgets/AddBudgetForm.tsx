@@ -22,12 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveBudget } from "@/lib/data";
-import { Loader2 } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { Budget, Category } from "@/lib/types";
 import { useEffect } from "react";
 import { collection, query, where } from "firebase/firestore";
+import { MagicInput } from "../common/MagicInput";
+import { AddCategoryDialog } from "../categories/AddCategoryDialog";
+import { DialogTrigger } from "@/components/ui/dialog";
 
 
 const formSchema = z.object({
@@ -126,21 +129,30 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma categoria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
-                  {availableCategories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select onValueChange={field.onChange} value={field.value} disabled={!!budget}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {budget && <SelectItem value={budget.categoryId}>{budget.categoryName}</SelectItem>}
+                    {availableCategories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <AddCategoryDialog>
+                   <DialogTrigger asChild>
+                     <Button type="button" size="icon" variant="outline" title="Adicionar Nova Categoria">
+                        <PlusCircle className="h-4 w-4" />
+                     </Button>
+                   </DialogTrigger>
+                </AddCategoryDialog>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -152,7 +164,12 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
             <FormItem>
               <FormLabel>Valor do Orçamento</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Ex: 500.00" {...field} />
+                <MagicInput 
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="Ex: 500.00"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
