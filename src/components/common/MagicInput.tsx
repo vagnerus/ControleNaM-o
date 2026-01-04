@@ -57,14 +57,20 @@ const parseInputValue = (value: string): number => {
 
 export const MagicInput = forwardRef<HTMLInputElement, MagicInputProps>(
   ({ value, onChange, onBlur, className, ...props }, ref) => {
-    const [displayValue, setDisplayValue] = useState<string>(formatCurrency(value) || '');
+    const [displayValue, setDisplayValue] = useState<string>('');
     const [isEditing, setIsEditing] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        if (!isEditing) {
+        setMounted(true);
+        setDisplayValue(formatCurrency(value));
+    }, []);
+
+    useEffect(() => {
+        if (mounted && !isEditing) {
             setDisplayValue(formatCurrency(value));
         }
-    }, [value, isEditing]);
+    }, [value, isEditing, mounted]);
 
     const handleFocus = () => {
       setIsEditing(true);
