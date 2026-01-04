@@ -94,7 +94,7 @@ export function AddBudgetForm({ onFinished, budget }: AddBudgetFormProps) {
 
     const category = expenseCategories?.find(c => c.id === values.categoryId);
     if (!category) {
-        toast({ variant: "destructive", title: "Erro!", description: "Categoria não encontrada." });
+        toast({ variant: "destructive", title: "Erro!", description: "Categoria inválida ou não encontrada. Tente recarregar." });
         return;
     }
 
