@@ -302,12 +302,14 @@ export const saveBudget = (firestore: Firestore, userId: string, budgetData: Omi
     const budgetDoc = doc(firestore, 'users', userId, 'budgets', budgetId);
     return updateDoc(budgetDoc, budgetData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetDoc.path, operation: 'update', requestResourceData: budgetData }));
+      throw error;
     });
   } else {
     // Add new budget
     const budgetsCollection = collection(firestore, 'users', userId, 'budgets');
     return addDoc(budgetsCollection, budgetData).catch(error => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: budgetsCollection.path, operation: 'create', requestResourceData: budgetData }));
+      throw error;
     });
   }
 };
