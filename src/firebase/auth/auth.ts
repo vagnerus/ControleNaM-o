@@ -13,11 +13,24 @@ import {
   updateProfile,
   sendEmailVerification,
 } from 'firebase/auth';
+import { Firestore, doc, setDoc } from 'firebase/firestore';
 
-export async function signUpWithEmail(auth: Auth, email: string, password: string, displayName: string) {
+export async function signUpWithEmail(auth: Auth, firestore: Firestore, email: string, password: string, displayName: string) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   if (userCredential.user) {
     await updateProfile(userCredential.user, { displayName });
+    
+    // Create user document in Firestore
+    // Security rules require 'id' field to match the document ID (user UID)
+    await setDoc(doc(firestore, "users", userCredential.user.uid), {
+      id: userCredential.user.uid,
+      uid: userCredential.user.uid,
+      email: email,
+      displayName: displayName,
+      createdAt: new Date(),
+      photoURL: userCredential.user.photoURL || null,
+      role: 'user',
+    });
   }
   return userCredential;
 }

@@ -22,6 +22,7 @@ import { ArrowRight, TrendingDown, TrendingUp, Wallet, Loader2 } from "lucide-re
 import { SettingsContext } from '@/contexts/SettingsContext';
 import { useContext } from 'react';
 import { AddTransactionDialog } from '@/components/transactions/AddTransactionDialog';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -100,9 +101,12 @@ export default function DashboardPage() {
     <div className="flex flex-col">
       <header className="bg-card p-4 sm:p-6 lg:p-8 border-b">
         <div className="flex items-center justify-between">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Painel de Controle</h1>
-                <p className="text-muted-foreground">Bem-vindo(a) de volta, {user?.displayName || 'usuário'}!</p>
+            <div className="flex items-center gap-2">
+                <SidebarTrigger className="md:hidden" />
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Painel de Controle</h1>
+                    <p className="text-muted-foreground">Bem-vindo(a) de volta, {user?.displayName || 'usuário'}!</p>
+                </div>
             </div>
             <AddTransactionDialog />
         </div>

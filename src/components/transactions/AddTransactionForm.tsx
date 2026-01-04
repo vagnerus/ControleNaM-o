@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-import { saveTransaction } from "@/lib/data.tsx";
+import { saveTransaction } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2, Paperclip, X, Sparkles } from "lucide-react";
 import { format } from "date-fns";
@@ -44,7 +44,7 @@ import { Switch } from "../ui/switch";
 import { MultiSelect, Option } from "../ui/multi-select";
 import { useStorage, uploadAttachment } from "@/firebase/storage";
 import { Badge } from "../ui/badge";
-import { suggestCategory } from "@/ai/flows/suggest-category-flow";
+import { suggestCategory } from "@/lib/ai-client";
 
 const formSchema = z.object({
   type: z.enum(["income", "expense"], {

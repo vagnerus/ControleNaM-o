@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { budgetForecasting, BudgetForecastingInput } from "@/ai/flows/budget-forecasting";
+import { budgetForecasting, BudgetForecastingInput } from "@/lib/ai-forecast-client";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sparkles, Loader2, Wand2 } from "lucide-react";
