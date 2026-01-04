@@ -82,15 +82,17 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-start justify-between pb-2">
-        <CardTitle className="text-base font-semibold">{budget.categoryName}</CardTitle>
-        <AddBudgetDialog
-            open={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            budget={budget}
-        >
-            <AlertDialog>
+    <>
+      <AddBudgetDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        budget={budget}
+      />
+
+      <AlertDialog>
+        <Card>
+            <CardHeader className="flex-row items-start justify-between pb-2">
+                <CardTitle className="text-base font-semibold">{budget.categoryName}</CardTitle>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6 -mt-2 -mr-2">
@@ -110,38 +112,38 @@ export function BudgetCard({ budget, transactions }: BudgetCardProps) {
                         </AlertDialogTrigger>
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Essa ação não pode ser desfeita. Isso excluirá permanentemente o
-                            seu planejamento para esta categoria.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                            Excluir
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </AddBudgetDialog>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="flex justify-between items-baseline">
-          <span className="text-xl font-bold">
-            {formatCurrency(spent)}
-          </span>
-          <span className="text-sm font-medium text-muted-foreground">
-            / {formatCurrency(budget.amount)}
-          </span>
-        </div>
-        <Progress value={percentage} indicatorClassName={progressColor} className="h-2" />
-        <p className={cn("text-xs text-right font-medium", textColor)}>
-            {percentage.toFixed(0)}% utilizado
-        </p>
-      </CardContent>
-    </Card>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                <div className="flex justify-between items-baseline">
+                <span className="text-xl font-bold">
+                    {formatCurrency(spent)}
+                </span>
+                <span className="text-sm font-medium text-muted-foreground">
+                    / {formatCurrency(budget.amount)}
+                </span>
+                </div>
+                <Progress value={percentage} indicatorClassName={progressColor} className="h-2" />
+                <p className={cn("text-xs text-right font-medium", textColor)}>
+                    {percentage.toFixed(0)}% utilizado
+                </p>
+            </CardContent>
+        </Card>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Essa ação não pode ser desfeita. Isso excluirá permanentemente o
+                    seu planejamento para esta categoria.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Excluir
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
